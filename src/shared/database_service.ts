@@ -2,11 +2,14 @@ import { Constants } from './constants';
 import { Collection, Db, MongoClient, ObjectId } from "mongodb";
 import { User } from '../models/user';
 import { JobLog } from '../models/jobLog';
+import { TtlToken } from '../models/ttl_token';
 
 export class DatabaseService {
   private static _mongoDbName = process.env.DB_NAME || 'timer2ticketDB';
   private static _usersCollectionName = 'users';
   private static _jobLogsCollectionName = 'jobLogs';
+  private static _ttlTokensTwoDaysCollectionName = 'ttlTokensTwoDays';
+  private static _ttlTokensOneHourCollectionName = 'ttlTokensOneHour';
 
   private static _instance: DatabaseService;
 
@@ -15,6 +18,10 @@ export class DatabaseService {
 
   private _usersCollection: Collection<User> | undefined;
   private _jobLogsCollection: Collection<JobLog> | undefined;
+
+  // these two are representing same objects, but in DB are stored in different collections because of different expiration time
+  private _ttlTokensTwoDaysCollection: Collection<TtlToken> | undefined;
+  private _ttlTokensOneHourCollection: Collection<TtlToken> | undefined;
 
   private _initCalled = false;
 
@@ -48,6 +55,8 @@ export class DatabaseService {
 
     this._usersCollection = this._db.collection(DatabaseService._usersCollectionName);
     this._jobLogsCollection = this._db.collection(DatabaseService._jobLogsCollectionName);
+    this._ttlTokensTwoDaysCollection = this._db.collection(DatabaseService._ttlTokensTwoDaysCollectionName);
+    this._ttlTokensOneHourCollection = this._db.collection(DatabaseService._ttlTokensOneHourCollectionName);
 
     return true;
   }
@@ -105,6 +114,62 @@ export class DatabaseService {
       .sort(sortQuery)
       .limit(100)
       .toArray();
+  }
+
+  // ***********************************************************
+  // TTL TOKENS ************************************************
+  // ***********************************************************
+
+  async getTtlTokenTwoDays(token: string): Promise<TtlToken | null> {
+    if (!this._ttlTokensTwoDaysCollection) return null;
+
+    const filterQuery = { token: token };
+
+    return await this._ttlTokensTwoDaysCollection.findOne(filterQuery);
+  }
+
+  async createTtlTokenTwoDaysForUsername(username: string): Promise<TtlToken | null> {
+    if (!this._ttlTokensTwoDaysCollection) return null;
+
+    const newTtlToken = new TtlToken(username);
+
+    const result = await this._ttlTokensTwoDaysCollection.insertOne(newTtlToken);
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
+
+  async deleteTtlTokenTwoDays(id: string | ObjectId): Promise<boolean | null> {
+    if (!this._ttlTokensTwoDaysCollection) return null;
+
+    const filterQuery = { _id: new ObjectId(id) };
+
+    const result = await this._ttlTokensTwoDaysCollection.deleteOne(filterQuery);
+    return result.result.ok === 1;
+  }
+
+  async getTtlTokenOneHour(token: string): Promise<TtlToken | null> {
+    if (!this._ttlTokensOneHourCollection) return null;
+
+    const filterQuery = { token: token };
+
+    return await this._ttlTokensOneHourCollection.findOne(filterQuery);
+  }
+
+  async createTtlTokenOneHourForUsername(username: string): Promise<TtlToken | null> {
+    if (!this._ttlTokensOneHourCollection) return null;
+
+    const newTtlToken = new TtlToken(username);
+
+    const result = await this._ttlTokensOneHourCollection.insertOne(newTtlToken);
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
+
+  async deleteTtlTokenOneHour(id: string | ObjectId): Promise<boolean | null> {
+    if (!this._ttlTokensOneHourCollection) return null;
+
+    const filterQuery = { _id: new ObjectId(id) };
+
+    const result = await this._ttlTokensOneHourCollection.deleteOne(filterQuery);
+    return result.result.ok === 1;
   }
 }
 
