@@ -33,6 +33,9 @@ export class TranslateService {
 
             ['emailPasswordResetDoneSubject', 'Timer2Ticket account password reset done'],
             ['emailPasswordResetDoneBody', '<p>The password for your Timer2Ticket account has just been changed. This email is for confirmation purposes only. No further action is required.</p>'],
+            
+            ['emailRegistrationSubject', 'Timer2Ticket account registration'],
+            ['emailRegistrationBody', '<p>You have requested a Timer2Ticket registration for this email.</p><br/><p>Please complete your registration using the following link (it is valid for 2 days from the time it was generated): <a href="https://app.timer2ticket.com/registration/{{ token }}">https://app.timer2ticket.com/registration/{{ token }}</a>. If the link does not open, please copy it into your browser address.</p><br/><p>If you have not requested this action, feel free to ignore the email.</p>'],
 
             ['emailGenericFooter', 'This email was generated automatically. Please do not reply to the address in the header.'],
           ])
