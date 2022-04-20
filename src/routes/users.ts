@@ -8,6 +8,7 @@ import { UserFromClient } from '../models/user_from_client';
 import { validate } from 'class-validator';
 import { Constants } from '../shared/constants';
 import { UserChangePassword } from '../models/user_change_password';
+import { Utilities } from '../shared/utilities';
 
 const router = express.Router();
 router.use(express.urlencoded({ extended: false }));
@@ -19,7 +20,7 @@ router.use((req, res, next) => {
 
   // verify JWT
 
-  const tokenFromHeader = req.headers["x-access-token"];
+  const tokenFromHeader = req.headers['x-access-token'];
 
   if (!tokenFromHeader) {
     return res.sendStatus(403);
@@ -87,14 +88,19 @@ router.put('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
 
   // validate user from client object
   const validationResults = await validate(userFromClient);
-  console.log(validationResults);
 
   // validate correct cron schedule format (is not validated above)
   let isScheduleValid = true;
   if (userFromClient.configSyncJobDefinition) {
+    userFromClient.configSyncJobDefinition.schedule = Utilities.randomizeCronSchedule(
+      userFromClient.configSyncJobDefinition.schedule
+    );
     isScheduleValid &&= cron.validate(userFromClient.configSyncJobDefinition.schedule);
   }
   if (userFromClient.timeEntrySyncJobDefinition) {
+    userFromClient.timeEntrySyncJobDefinition.schedule = Utilities.randomizeCronSchedule(
+      userFromClient.timeEntrySyncJobDefinition.schedule
+    );
     isScheduleValid &&= cron.validate(userFromClient.timeEntrySyncJobDefinition.schedule);
   }
 
@@ -134,18 +140,21 @@ router.post('/change_password/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   const userId = req.params?.userId;
   const token = res.locals?.token;
 
-  if (!res.locals.userIdFromToken
-    || !userId || !token
-    || !req.body['oldPassword']
-    || !req.body['newPassword']
-    || !req.body['newPasswordAgain']) {
+  if (
+    !res.locals.userIdFromToken ||
+    !userId ||
+    !token ||
+    !req.body['oldPassword'] ||
+    !req.body['newPassword'] ||
+    !req.body['newPasswordAgain']
+  ) {
     return res.sendStatus(400);
   }
 
   const userChangePassword = new UserChangePassword(
     req.body['oldPassword'],
     req.body['newPassword'],
-    req.body['newPasswordAgain'],
+    req.body['newPasswordAgain']
   );
 
   if (!userChangePassword) {
@@ -160,13 +169,14 @@ router.post('/change_password/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   // validate user from client object
   const validationResults = await validate(userChangePassword);
 
-  if (validationResults.length !== 0 || userChangePassword.newPassword != userChangePassword.newPasswordAgain) {
+  if (
+    validationResults.length !== 0 ||
+    userChangePassword.newPassword != userChangePassword.newPasswordAgain
+  ) {
     return res.sendStatus(400);
   }
 
   const user = await databaseService.getUserById(userId);
-  console.log(user);
-  console.log(userId);
 
   if (!user) {
     return res.sendStatus(404);
