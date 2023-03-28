@@ -126,8 +126,24 @@ router.get('/toggl_track_workspaces', async (req, res) => {
     return res.sendStatus(400);
   }
 
-  const response = await superagent
-    .get('https://api.track.toggl.com/api/v8/me')
+  const responseMe = await superagent
+    .get('https://api.track.toggl.com/api/v9/me')
+    .auth(togglTrackApiKey, 'api_token')
+    .on('error', (err) => {
+      // on error, response with status from Toggl Track
+      let statusCode = 503;
+      if (err && err.status && err.status !== 401) {
+        statusCode = err.status;
+      } else if (err && err.status && err.status === 401) {
+        // do not send 401, it would lead to user logout on the client side due to error intercepting
+        statusCode = 400;
+      }
+
+      return res.sendStatus(statusCode);
+    });
+
+  const responseWorkspaces = await superagent
+    .get('https://api.track.toggl.com/api/v9/me/workspaces')
     .auth(togglTrackApiKey, 'api_token')
     .on('error', (err) => {
       // on error, response with status from Toggl Track
@@ -145,7 +161,7 @@ router.get('/toggl_track_workspaces', async (req, res) => {
   try {
     // extract workspaces
     const workspaces: Record<string, unknown>[] = [];
-    response.body['data']['workspaces'].forEach((workspace: never) => {
+    responseWorkspaces.body.forEach((workspace: never) => {
       workspaces.push(
         {
           id: workspace['id'],
@@ -155,7 +171,7 @@ router.get('/toggl_track_workspaces', async (req, res) => {
     });
     
     // extract userId
-    const userId = response.body['data']['id'];
+    const userId = responseMe.body['id'];
 
     return res.send({
       user_id: userId,
