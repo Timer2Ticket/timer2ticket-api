@@ -1,214 +1,196 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
-import cron from 'node-cron';
-import bcrypt from 'bcrypt';
 import { databaseService } from '../shared/database_service';
-import { UserToClient } from '../models/user_to_client';
-import { UserFromClient } from '../models/user_from_client';
-import { validate } from 'class-validator';
 import { Constants } from '../shared/constants';
-import { UserChangePassword } from '../models/user_change_password';
-import { Utilities } from '../shared/utilities';
+import { authCommons } from '../shared/auth_commons';
+import { validate } from 'class-validator';
+import { PatchUserFromClient } from '../models/user/from_client/patch_user_from_client';
+import { coreService } from '../shared/core_service';
 
-const router = express.Router();
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const ManagementClient = require('auth0').ManagementClient;
+
+const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
-
 // middleware that is specific to this router
 router.use((req, res, next) => {
-  console.log(`Time: ${Date.now()}`);
+  console.log(`Users router calls at time: ${Date.now()}`);
 
-  // verify JWT
+  // For CORS policy
+  res.append('Access-Control-Allow-Origin', ['*']);
+  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH');
+  res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
 
-  const tokenFromHeader = req.headers['x-access-token'];
-
-  if (!tokenFromHeader) {
-    return res.sendStatus(403);
-  }
-
-  const token = Array.isArray(tokenFromHeader) ? tokenFromHeader[0] : tokenFromHeader;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jwt.verify(token, Constants.jwtSecret, (err: any, decoded: any) => {
-    if (err) {
-      return res.sendStatus(401);
-    }
-    res.locals.userIdFromToken = decoded.id;
-    res.locals.token = token;
-    next();
-  });
+  next();
 });
 
 /**
- * Get user with userId in parameter - needs to be 24 length string (MongoDB ObjectId)
+ * Get user with auth0UserId in parameter. If user doesn't exist, create new one.
  */
-router.get('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
-  const userId = req.params.userId;
-  const token = res.locals.token;
-
-  // authorize if userId from JWT is the same as in userId param
-  if (!res.locals.userIdFromToken || !userId || !token) {
-    return res.sendStatus(400);
-  }
-
-  if (res.locals.userIdFromToken !== userId) {
+router.get('/', authCommons.checkJwt, async (req, res) => {
+  if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
 
-  const user = await databaseService.getUserById(userId);
+  const auth0UserId = req.params.auth0UserId;
 
-  if (!user) {
-    return res.sendStatus(404);
-  }
+  const user = await databaseService.getUserByAuth0UserId(auth0UserId);
 
-  return res.send(new UserToClient(user, token));
-});
-
-/**
- * Updates user taken from body.user
- */
-router.put('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
-  const userId = req.params?.userId;
-  const token = res.locals?.token;
-
-  if (!res.locals.userIdFromToken || !userId || !token) {
-    return res.sendStatus(400);
-  }
-
-  const userFromClient: UserFromClient = req.body?.user;
-
-  if (!res.locals.userIdFromToken || !userId || !token || !userFromClient) {
-    return res.sendStatus(400);
-  }
-
-  // authorize if userId from JWT is the same as in userId param
-  if (res.locals.userIdFromToken !== userId) {
-    return res.sendStatus(401);
-  }
-
-  // validate user from client object
-  const validationResults = await validate(userFromClient);
-
-  // validate correct cron schedule format (is not validated above)
-  let isScheduleValid = true;
-  if (userFromClient.configSyncJobDefinition) {
-    userFromClient.configSyncJobDefinition.schedule = Utilities.randomizeCronSchedule(
-      userFromClient.configSyncJobDefinition.schedule
-    );
-    isScheduleValid &&= cron.validate(userFromClient.configSyncJobDefinition.schedule);
-  }
-  if (userFromClient.timeEntrySyncJobDefinition) {
-    userFromClient.timeEntrySyncJobDefinition.schedule = Utilities.randomizeCronSchedule(
-      userFromClient.timeEntrySyncJobDefinition.schedule
-    );
-    isScheduleValid &&= cron.validate(userFromClient.timeEntrySyncJobDefinition.schedule);
-  }
-
-  if (validationResults.length !== 0 || isScheduleValid === false) {
-    return res.sendStatus(400);
-  }
-
-  const user = await databaseService.getUserById(userId);
-
-  if (!user) {
-    return res.sendStatus(404);
-  }
-
-  if (user.status === 'registrated') {
-    // set to inactive after config confirm, client should send another api request to start syncing (and status => active)
-    user.status = 'inactive';
-  }
-
-  // only these properties can be changed this way
-  user.configSyncJobDefinition = userFromClient.configSyncJobDefinition;
-  user.timeEntrySyncJobDefinition = userFromClient.timeEntrySyncJobDefinition;
-  user.serviceDefinitions = userFromClient.serviceDefinitions;
-
-  const updatedUser = await databaseService.updateUser(user);
-
-  if (updatedUser) {
-    return res.send(new UserToClient(updatedUser, token));
-  } else {
-    return res.sendStatus(503);
-  }
-});
-
-/**
- * Changes user's password
- */
-router.post('/change_password/:userId([a-zA-Z0-9]{24})', async (req, res) => {
-  const userId = req.params?.userId;
-  const token = res.locals?.token;
-
-  if (
-    !res.locals.userIdFromToken ||
-    !userId ||
-    !token ||
-    !req.body['oldPassword'] ||
-    !req.body['newPassword'] ||
-    !req.body['newPasswordAgain']
-  ) {
-    return res.sendStatus(400);
-  }
-
-  const userChangePassword = new UserChangePassword(
-    req.body['oldPassword'],
-    req.body['newPassword'],
-    req.body['newPasswordAgain']
-  );
-
-  if (!userChangePassword) {
-    return res.sendStatus(400);
-  }
-
-  // authorize if userId from JWT is the same as in userId param
-  if (res.locals.userIdFromToken !== userId) {
-    return res.sendStatus(401);
-  }
-
-  // validate user from client object
-  const validationResults = await validate(userChangePassword);
-
-  if (
-    validationResults.length !== 0 ||
-    userChangePassword.newPassword != userChangePassword.newPasswordAgain
-  ) {
-    return res.sendStatus(400);
-  }
-
-  const user = await databaseService.getUserById(userId);
-
-  if (!user) {
-    return res.sendStatus(404);
+  // Return user if exists
+  if (user) {
+    return res.send(user);
   }
 
   try {
-    // Check old password's validity
-    const isValid = await bcrypt.compare(userChangePassword.oldPassword, user.passwordHash);
-
-    if (!isValid) {
-      // Cannot send 401 since it would force the client to logout
-      return res.sendStatus(400);
-    }
-
-    // generate new password hash
-    const hash = await bcrypt.hash(userChangePassword.newPassword, Constants.bcryptSaltRounds);
-
-    // change password hash
-    user.passwordHash = hash;
-
-    // store in DB
-    const updatedUser = await databaseService.updateUser(user);
-
-    if (updatedUser) {
-      return res.send(new UserToClient(updatedUser, token));
-    } else {
+    // get user e-mail if exists
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const userInfo = await authCommons.geUserInfo(req.auth.token);
+    if (!userInfo) {
       return res.sendStatus(503);
     }
-  } catch (error) {
-    console.log(error);
+
+    // for migration - only in commercial version - check if there is a user with same email without auth0UserId
+    if(Constants.isCommercialVersion) {
+      const userByEmail = await databaseService.getMigratedUser(userInfo.body.email);
+      if (userByEmail) {
+        userByEmail.auth0UserId = auth0UserId;
+        // update auth0UserId
+        await databaseService.updateUser(userByEmail._id, userByEmail);
+        return res.send(userByEmail);
+      }
+    }
+
+    // else create new user
+    const newUser = await databaseService.createUser(auth0UserId, userInfo.body.email);
+
+    if (Constants.isCommercialVersion && newUser && newUser._id) {
+      // create new membershipInfo
+      await databaseService.createMembershipInfo(newUser._id);
+    }
+
+    return res.send(newUser);
+  } catch (ex) {
     return res.sendStatus(503);
   }
 });
+
+/**
+ * Delete user with auth0UserId in parameter.
+ */
+// router.delete('/', authCommons.checkJwt, async (req, res) => {
+//   if (!authCommons.authorizeUser(req)) {
+//     return res.sendStatus(401);
+//   }
+//
+//   const management = getManagementClient();
+//
+//   let isSuccessful = true;
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   await management.deleteUser({ id: req.params.auth0UserId }, function(err: any, response: any) {
+//     if (err) {
+//       isSuccessful = false;
+//     }
+//   });
+//
+//   if (!isSuccessful) {
+//     return res.status(503).send('Error while deleting user');
+//   }
+//
+//   res.sendStatus(204);
+// });
+
+/**
+ * Update user with auth0UserId in parameter.
+ * Enabled fields to update: email, notifications.syncProblemsInfo, timeZone.
+ */
+router.patch('/', authCommons.checkJwt, async (req, res) => {
+  if (!authCommons.authorizeUser(req)) {
+    return res.sendStatus(401);
+  }
+
+  const fromClient: PatchUserFromClient = new PatchUserFromClient(req.body);
+  const validationResults = await validate(fromClient);
+  if (validationResults.length > 0) {
+    return res.status(400).send('Incorrect request body: ' + JSON.stringify(validationResults));
+  }
+
+  const auth0UserId = req.params.auth0UserId;
+  const user = await databaseService.getUserByAuth0UserId(auth0UserId);
+  if (!user) {
+    return res.send(404).send('User not found');
+  }
+
+  if ('email' in req.body) {
+    if (user.email) {
+      return res.status(400).send('Email is already set!');
+    }
+    user.email = fromClient.email;
+  }
+
+  if ('syncProblemsInfo' in req.body && fromClient.syncProblemsInfo !== null) {
+    user.notifiactionSettings.syncProblemsInfo = fromClient.syncProblemsInfo;
+  }
+  if ('timeZone' in req.body && fromClient.timeZone) {
+    user.timeZone = fromClient.timeZone;
+
+    // Update connections in core service
+    const userConnections = await databaseService.getConnectionsByUserId(user._id);
+    if (!userConnections) {
+      return res.status(503).send('Error while getting user connections');
+    }
+
+    const userConnectionsIds = userConnections.map((connection) => connection._id.toHexString());
+
+    const coreServiceResponse = await coreService.updateConnections(userConnectionsIds);
+    if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+      return res.status(503).send('Error updating connection');
+    }
+  }
+
+  const updatedUser = await databaseService.updateUser(user._id, user);
+  if (!updatedUser) {
+    return res.status(503).send('Error while updating user');
+  }
+
+  return res.status(200).send(updatedUser);
+});
+
+/**
+ * Ask for change password URL (auth0) for user with auth0UserId in parameter.
+ */
+router.post('/changePassword', authCommons.checkJwt, async (req, res) => {
+  if (!authCommons.authorizeUser(req)) {
+    return res.sendStatus(401);
+  }
+
+  if (!req.params.auth0UserId.startsWith('auth0|')) {
+    return res.status(400).send('Unable to change password for user using social login.');
+  }
+
+  const management = getManagementClient();
+  const data = {
+    result_url: `${req.get('origin')}/profile/settings`,
+    user_id: req.params.auth0UserId,
+  };
+
+  let response;
+  try {
+    response = await management.createPasswordChangeTicket(data);
+  } catch (ex) {
+    return res.status(503).send('Error while creating password change ticket');
+  }
+
+  res.status(200).send(response.ticket);
+});
+
+function getManagementClient() {
+  return new ManagementClient({
+    domain: Constants.authManagementDomain,
+    clientId: Constants.authManagementClientId,
+    clientSecret: Constants.authManagementClientSecret,
+  });
+}
+
 
 module.exports = router;

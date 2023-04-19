@@ -1,8 +1,9 @@
 import express from 'express';
-import { authCommons } from '../shared/auth_commons';
-import { databaseService } from '../shared/database_service';
-import { User } from '../models/user/user';
-import { JobLog } from '../models/job_log';
+import { Constants } from '../../shared/constants';
+import { authCommons } from '../../shared/auth_commons';
+import { databaseService } from '../../shared/database_service';
+import { User } from '../../models/user/user';
+import { ImmediateSyncLog } from '../../models/commrecial/immediate_sync_log';
 
 const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
@@ -10,14 +11,18 @@ router.use(express.json());
 
 // middleware that is specific to this router
 router.use((req, res, next) => {
-  console.log(`Job logs router calls at time: ${Date.now()}`);
+  console.log(`Sync logs router calls at time: ${Date.now()}`);
 
   // For CORS policy
   res.append('Access-Control-Allow-Origin', ['*']);
   res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
   res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
 
-  next();
+  if (!Constants.isCommercialVersion) {
+    return res.sendStatus(404);
+  } else {
+    next();
+  }
 });
 
 /**
@@ -35,7 +40,7 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
     return res.status(503).send('Error getting user');
   }
 
-  const logs: JobLog[] = await databaseService.getJobLogsByUserId(user._id);
+  const logs: ImmediateSyncLog[] = await databaseService.getImmediateSyncLogsByUserId(user._id);
   if (!logs) {
     return res.status(503).send('Error getting connections');
   }

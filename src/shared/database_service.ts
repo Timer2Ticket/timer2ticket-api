@@ -1,15 +1,19 @@
 import { Constants } from './constants';
-import { Collection, Db, MongoClient, ObjectId } from "mongodb";
-import { User } from '../models/user';
-import { JobLog } from '../models/jobLog';
-import { TtlToken } from '../models/ttl_token';
+import { Collection, Db, MongoClient, ObjectId } from 'mongodb';
+import { User } from '../models/user/user';
+import { JobLog } from '../models/job_log';
+import { MembershipInfo } from '../models/commrecial/membership_info';
+import { Connection } from '../models/connection/connection';
+import { ImmediateSyncLog } from '../models/commrecial/immediate_sync_log';
 
 export class DatabaseService {
-  private static _mongoDbName = process.env.DB_NAME || 'timer2ticketDB';
+  private static _mongoDbName = Constants.dbName || 'timer2ticketDB_new';
   private static _usersCollectionName = 'users';
+  private static _connectionsCollectionName = 'connections';
   private static _jobLogsCollectionName = 'jobLogs';
-  private static _ttlTokensTwoDaysCollectionName = 'ttlTokensTwoDays';
-  private static _ttlTokensOneHourCollectionName = 'ttlTokensOneHour';
+  // for commercial version
+  private static _membershipInfoCollectionName = 'membershipInfo';
+  private static _immediateSyncLogsCollectionName = 'immediateSyncLogs';
 
   private static _instance: DatabaseService;
 
@@ -17,11 +21,10 @@ export class DatabaseService {
   private _db: Db | undefined;
 
   private _usersCollection: Collection<User> | undefined;
+  private _membershipInfoCollection: Collection<MembershipInfo> | undefined;
+  private _connectionsCollection: Collection<Connection> | undefined;
   private _jobLogsCollection: Collection<JobLog> | undefined;
-
-  // these two are representing same objects, but in DB are stored in different collections because of different expiration time
-  private _ttlTokensTwoDaysCollection: Collection<TtlToken> | undefined;
-  private _ttlTokensOneHourCollection: Collection<TtlToken> | undefined;
+  private _immediateSyncLogsCollection: Collection<ImmediateSyncLog> | undefined;
 
   private _initCalled = false;
 
@@ -33,7 +36,8 @@ export class DatabaseService {
    * Private empty constructor to make sure that this is correct singleton
    */
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  private constructor() { }
+  private constructor() {
+  }
 
   /**
    * Needs to be called (and awaited) to correctly connect to the database
@@ -47,17 +51,19 @@ export class DatabaseService {
     this._mongoClient = new MongoClient(Constants.mongoDbUrl, { useUnifiedTopology: true });
 
     await this._mongoClient.connect();
-    console.log("Connected to MongoDB!");
 
     if (!this._mongoClient) return false;
 
     this._db = this._mongoClient.db(DatabaseService._mongoDbName);
 
     this._usersCollection = this._db.collection(DatabaseService._usersCollectionName);
+    this._connectionsCollection = this._db.collection(DatabaseService._connectionsCollectionName);
     this._jobLogsCollection = this._db.collection(DatabaseService._jobLogsCollectionName);
-    this._ttlTokensTwoDaysCollection = this._db.collection(DatabaseService._ttlTokensTwoDaysCollectionName);
-    this._ttlTokensOneHourCollection = this._db.collection(DatabaseService._ttlTokensOneHourCollectionName);
 
+    if (Constants.isCommercialVersion) {
+      this._membershipInfoCollection = this._db.collection(DatabaseService._membershipInfoCollectionName);
+      this._immediateSyncLogsCollection = this._db.collection(DatabaseService._immediateSyncLogsCollectionName);
+    }
     return true;
   }
 
@@ -69,46 +75,87 @@ export class DatabaseService {
   // USERS *****************************************************
   // ***********************************************************
 
-  async getUserById(userId: string): Promise<User | null> {
+  /**
+   * Get user by user id
+   * @param userId
+   */
+  async getUserById(userId: ObjectId): Promise<User | null> {
     if (!this._usersCollection) return null;
 
-    const filterQuery = { _id: new ObjectId(userId) };
+
+    const filterQuery = { _id: userId };
     return this._usersCollection.findOne(filterQuery);
   }
 
-  async getUserByUsername(username: string): Promise<User | null> {
+  /**
+   * Get user by auth0 user id
+   * @param auth0UserId
+   */
+  async getUserByAuth0UserId(auth0UserId: string): Promise<User | null> {
     if (!this._usersCollection) return null;
 
-    const filterQuery = { username: username };
+    const filterQuery = { auth0UserId: auth0UserId };
     return this._usersCollection.findOne(filterQuery);
   }
 
-  async createUser(username: string, passwordHash: string): Promise<User | null> {
+  async getMigratedUser(email: string) : Promise<User | null> {
+    if (!this._usersCollection) return null;
+    const filterQuery = { email: email, auth0UserId: "" };
+    return this._usersCollection.findOne(filterQuery);
+  }
+
+  /**
+   * Create user
+   * @param auth0UserId
+   * @param userMail
+   */
+  async createUser(auth0UserId: string, userMail: string | null): Promise<User | null> {
     if (!this._usersCollection) return null;
 
-    const result = await this._usersCollection.insertOne(User.default(username, passwordHash));
+    const result = await this._usersCollection.insertOne(User.default(auth0UserId, userMail));
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
-  async updateUser(user: User): Promise<User | null> {
+  /**
+   * Get next id of connection for user defined by auth0 user id
+   * @param auth0UserId
+   */
+  async getNextConnectionId(auth0UserId: string): Promise<number | null> {
     if (!this._usersCollection) return null;
 
-    const filterQuery = { _id: new ObjectId(user._id) };
+    const filterQuery = { auth0UserId: auth0UserId };
+    const result = await this._usersCollection.findOneAndUpdate(filterQuery, { $inc: { connectionId: 1 } });
 
+    if (!result.value) {
+      return null;
+    }
+
+    return result.value.connectionId;
+  }
+
+  /**
+   * Update user
+   * @param id
+   * @param user
+   */
+  async updateUser(id: ObjectId, user: User): Promise<User | null> {
+    if (!this._usersCollection) return null;
+
+    const filterQuery = { _id: id };
     const result = await this._usersCollection.replaceOne(filterQuery, user);
-    return result.result.ok === 1 ? result.ops[0] : null;
+    return result.result.ok === 1 ? user : null;
   }
 
   // ***********************************************************
   // JOB LOGS **************************************************
   // ***********************************************************
 
-  async getJobLogsByUserId(userId: string): Promise<JobLog[]> {
+  async getJobLogsByUserId(userId: ObjectId): Promise<JobLog[]> {
     if (!this._jobLogsCollection) return [];
 
-    const filterQuery = { userId: new ObjectId(userId) };
-    // sort by date desc, limit to only 100
-    const sortQuery = { scheduledDate: -1 };
+    const filterQuery = { userId: userId };
+    // sort by date asc, limit to only 100
+    const sortQuery = { scheduledDate: 1 };
     return this._jobLogsCollection
       .find(filterQuery)
       .sort(sortQuery)
@@ -116,59 +163,358 @@ export class DatabaseService {
       .toArray();
   }
 
-  // ***********************************************************
-  // TTL TOKENS ************************************************
-  // ***********************************************************
+  async createJobLog(user: User, connection: Connection, type: string, scheduledDate: number): Promise<JobLog | null> {
+    if (!this._jobLogsCollection) return null;
 
-  async getTtlTokenTwoDays(token: string): Promise<TtlToken | null> {
-    if (!this._ttlTokensTwoDaysCollection) return null;
-
-    const filterQuery = { token: token };
-
-    return await this._ttlTokensTwoDaysCollection.findOne(filterQuery);
-  }
-
-  async createTtlTokenTwoDaysForUsername(username: string): Promise<TtlToken | null> {
-    if (!this._ttlTokensTwoDaysCollection) return null;
-
-    const newTtlToken = new TtlToken(username);
-
-    const result = await this._ttlTokensTwoDaysCollection.insertOne(newTtlToken);
+    const result = await this._jobLogsCollection.insertOne(JobLog.default(user, connection, type, scheduledDate));
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
-  async deleteTtlTokenTwoDays(id: string | ObjectId): Promise<boolean | null> {
-    if (!this._ttlTokensTwoDaysCollection) return null;
+  // ***********************************************************
+  // IMMEDIATE SYNC LOGS ***************************************
+  // ***********************************************************
 
-    const filterQuery = { _id: new ObjectId(id) };
+  async getImmediateSyncLogsByUserId(userId: ObjectId): Promise<ImmediateSyncLog[]> {
+    if (!this._immediateSyncLogsCollection) return [];
 
-    const result = await this._ttlTokensTwoDaysCollection.deleteOne(filterQuery);
-    return result.result.ok === 1;
+    const filterQuery = { userId: userId };
+    // sort by date asc, limit to only 100
+    const sortQuery = { date: 1 };
+    return this._immediateSyncLogsCollection
+      .find(filterQuery)
+      .sort(sortQuery)
+      .limit(100)
+      .toArray();
   }
 
-  async getTtlTokenOneHour(token: string): Promise<TtlToken | null> {
-    if (!this._ttlTokensOneHourCollection) return null;
+  async createImmediateSyncLog(userId: ObjectId, newBalance: number, change: number, date: number, type: string, job: ObjectId | null, description: string): Promise<ImmediateSyncLog | null> {
+    if (!this._immediateSyncLogsCollection) return null;
 
-    const filterQuery = { token: token };
-
-    return await this._ttlTokensOneHourCollection.findOne(filterQuery);
-  }
-
-  async createTtlTokenOneHourForUsername(username: string): Promise<TtlToken | null> {
-    if (!this._ttlTokensOneHourCollection) return null;
-
-    const newTtlToken = new TtlToken(username);
-
-    const result = await this._ttlTokensOneHourCollection.insertOne(newTtlToken);
+    const result = await this._immediateSyncLogsCollection.insertOne(ImmediateSyncLog.default(userId, newBalance, change, date, type, job, description));
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
-  async deleteTtlTokenOneHour(id: string | ObjectId): Promise<boolean | null> {
-    if (!this._ttlTokensOneHourCollection) return null;
 
-    const filterQuery = { _id: new ObjectId(id) };
+  // ***********************************************************
+  // MEMBERSHIP INFO *******************************************
+  // ***********************************************************
 
-    const result = await this._ttlTokensOneHourCollection.deleteOne(filterQuery);
+  /**
+   * Create membership info for user defined by user id
+   * @param userId
+   */
+  async createMembershipInfo(userId: ObjectId): Promise<MembershipInfo | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const result = await this._membershipInfoCollection.insertOne(MembershipInfo.default(userId));
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
+
+  async updateMembershipInfoStripeCustomerId(userId: ObjectId, stripeCustomerId: string): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $set: { stripeCustomerId: stripeCustomerId } }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  /**
+   * Create stripe subscription. It means update membership info's stripe subscription id, current membership, current membership finishes and current connections
+   * @param stripeCustomerId
+   * @param stripeSubscriptionId
+   * @param currentMembership
+   * @param currentMembershipFinishes
+   * @param currentConnections
+   */
+  async createMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string, currentMembership: string, currentMembershipFinishes: number, currentConnections: number): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, {
+      $set: {
+        stripeSubscriptionId: stripeSubscriptionId,
+        currentMembership: currentMembership,
+        currentMembershipFinishes: currentMembershipFinishes,
+        currentConnections: currentConnections,
+      },
+    }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  /**
+   * Update membership info's current membership, current membership finishes and current connections
+   * Returns old membership info
+   * @param stripeCustomerId
+   * @param stripeSubscriptionId
+   * @param currentMembership
+   * @param currentMembershipFinishes
+   * @param currentConnections
+   */
+  async updateMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string, currentMembership: string, currentMembershipFinishes: number, currentConnections: number): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId, stripeSubscriptionId: stripeSubscriptionId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, {
+      $set: {
+        currentMembership: currentMembership,
+        currentMembershipFinishes: currentMembershipFinishes,
+        currentConnections: currentConnections,
+      },
+    });
+
+    return result.value;
+  }
+
+  /**
+   * Delete stripe subscription. It means set stripeSubscriptionId, currentMembership, currentMembershipFinishes and currentConnections to null or 0
+   * Returns old membership info
+   * @param stripeCustomerId
+   * @param stripeSubscriptionId
+   */
+  async deleteMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId, stripeSubscriptionId: stripeSubscriptionId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, {
+      $set: {
+        stripeSubscriptionId: null,
+        currentMembership: null,
+        currentMembershipFinishes: null,
+        currentConnections: 0,
+      },
+    });
+
+    return result.value;
+  }
+
+  /**
+   * Get membership info for user defined by user id
+   * @param userId
+   */
+  async getMembershipInfoByUserId(userId: ObjectId): Promise<MembershipInfo | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    return this._membershipInfoCollection.findOne(filterQuery);
+  }
+
+  /**
+   * Get membership info for user defined by user id
+   * @param userId
+   */
+  async getMembershipInfoByStripeCustomerId(stripeCustomerId: string): Promise<MembershipInfo | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId };
+    return this._membershipInfoCollection.findOne(filterQuery);
+  }
+
+  /**
+   * Use immediate sync for user defined by user id
+   * findOneAndUpdate is atomic
+   * @param userId
+   */
+  async useImmediateSync(userId: ObjectId): Promise<MembershipInfo | null | undefined> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId, currentImmediateSyncs: { $gt: 0 } };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: -1 } }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  async updateFakturoidSubjectId(userId: ObjectId, fakturoidSubjectId: string): Promise<MembershipInfo | null | undefined> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $set: { fakturoidSubjectId: fakturoidSubjectId } }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  /**
+   * Use immediate sync for user defined by user id
+   * findOneAndUpdate is atomic
+   * @param userId
+   */
+  async saveLastSubscriptionSession(userId: ObjectId, subscriptionSessionId: string): Promise<MembershipInfo | null | undefined> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $set: { stripeLastSubscriptionSessionId: subscriptionSessionId } }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  /**
+   * Add change number of immediate syncs for user defined by stripeCustomerId
+   * findOneAndUpdate is atomic
+   * @param stripeCustomerId
+   * @param change
+   */
+  async addImmediateSync(stripeCustomerId: string, change: number): Promise<MembershipInfo | null | undefined> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: change } }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  /**
+   * Increment user's membership info's current active connections by 1
+   * @param userId
+   */
+
+  async addActiveConnection(userId: ObjectId): Promise<boolean | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId, $expr: { $lt: ['$currentActiveConnections', '$currentConnections'] } };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: 1 } });
+
+    return result.value !== null;
+  }
+
+  /**
+   * Decrement user's membership info's current active connections by 1
+   * @param userId
+   */
+  async removeActiveConnection(userId: ObjectId): Promise<boolean | null> {
+    return await this.incrementActiveConnectionByAmount(userId, -1);
+  }
+
+  /**
+   * Increment user's membership info's current active connections by amount
+   * @param userId
+   * @param amount
+   */
+  async incrementActiveConnectionByAmount(userId: ObjectId, amount: number): Promise<boolean | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: amount } });
+
+    return result.value !== null;
+  }
+
+  // ***********************************************************
+  // CONNECTIONS ***********************************************
+  // ***********************************************************
+
+  async createConnection(connection: Connection): Promise<Connection | null> {
+    if (!this._connectionsCollection) return null;
+
+    const result = await this._connectionsCollection.insertOne(connection);
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
+
+  async getConnectionsByUserId(userId: ObjectId): Promise<Connection[]> {
+    if (!this._connectionsCollection) return [];
+
+    const filterQuery = {
+      userId: userId,
+    };
+    return this._connectionsCollection.find(filterQuery).toArray();
+  }
+
+  async getActiveConnectionsByUserId(userId: ObjectId, limit: number): Promise<Connection[]> {
+    if (!this._connectionsCollection) return [];
+
+    const filterQuery = {
+      userId: userId,
+      isActive: true,
+    };
+    const sortQuery = { createdTimestamp: 1 };
+    return this._connectionsCollection
+      .find(filterQuery)
+      .sort(sortQuery)
+      .limit(limit)
+      .toArray();
+  }
+
+  async deactivateConnection(connectionId: ObjectId): Promise<Connection | null | undefined> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = {
+      _id: connectionId,
+      isActive: true,
+    };
+
+    const result = await this._connectionsCollection.findOneAndUpdate(filterQuery, { $set: { isActive: false } });
+
+    return result.value;
+
+  }
+
+  /**
+   * Get connections that are not marked to be deleted. It means it has not null deleteTimestamp
+   * @param userId
+   */
+  async getNotMarkedToDeleteConnectionsByUserId(userId: ObjectId): Promise<Connection[]> {
+    if (!this._connectionsCollection) return [];
+
+    const filterQuery = {
+      userId: userId,
+      deleteTimestamp: { $eq: null },
+    };
+    return this._connectionsCollection.find(filterQuery).toArray();
+  }
+
+  async getConnectionById(id: ObjectId): Promise<Connection | null> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = { _id: id };
+
+    return this._connectionsCollection.findOne(filterQuery);
+  }
+
+  async getActiveConnectionById(id: ObjectId): Promise<Connection | null> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = {
+      _id: id,
+      deleteTimestamp: { $eq: null },
+    };
+
+    return this._connectionsCollection.findOne(filterQuery);
+  }
+
+  async updateConnectionById(id: ObjectId, connection: Connection): Promise<Connection | null> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = { _id: id };
+
+    const result = await this._connectionsCollection.replaceOne(filterQuery, connection);
+    return result.result.ok === 1 ? connection : null;
+  }
+
+  async updateConnectionSyncJobConfig(connection: Connection): Promise<Connection | null | undefined> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = { _id: connection._id };
+
+    const result = await this._connectionsCollection.findOneAndUpdate(
+      filterQuery,
+      {
+        $set: {
+          configSyncJobDefinition: connection.configSyncJobDefinition,
+          timeEntrySyncJobDefinition: connection.timeEntrySyncJobDefinition,
+        },
+      },
+      { returnOriginal: false },
+    );
+    return result.value;
+
+  }
+
+  async deleteConnectionById(id: ObjectId): Promise<boolean> {
+    if (!this._connectionsCollection) return false;
+
+    const filterQuery = { _id: id };
+
+    const result = await this._connectionsCollection.deleteOne(filterQuery);
     return result.result.ok === 1;
   }
 }

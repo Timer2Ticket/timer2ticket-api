@@ -1,0 +1,5513 @@
+{
+	"info": {
+		"_postman_id": "5256a139-f303-4e33-93d4-0ffa8747da99",
+		"name": "T2T API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29126151"
+	},
+	"item": [
+		{
+			"name": "Commercial",
+			"item": [
+				{
+					"name": "Membership",
+					"item": [
+						{
+							"name": "Get user's membership info",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Response status code is 200 OK\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"\r",
+											"    const responseBody = pm.response.json();\r",
+											"\r",
+											"    pm.expect(responseBody).to.be.an('object');\r",
+											"    pm.expect(responseBody._id).to.be.a('string');\r",
+											"    pm.expect(responseBody.userId).to.be.a('string');\r",
+											"    pm.expect(responseBody.stripeCustomerId).to.be.a('string');\r",
+											"    pm.expect(responseBody.stripeSubscriptionId).to.be.a('string');\r",
+											"    pm.expect(responseBody.hasOwnProperty(\"stripeLastSubscriptionSessionId\")).to.be.true;\r",
+											"    pm.expect(responseBody.fakturoidSubjectId).to.be.a('number');\r",
+											"    pm.expect(responseBody.hasOwnProperty(\"currentMembership\")).to.be.true;\r",
+											"    pm.expect(responseBody.hasOwnProperty(\"currentMembershipFinishes\")).to.be.true;\r",
+											"    pm.expect(responseBody.currentConnections).to.be.a('number');\r",
+											"    pm.expect(responseBody.currentActiveConnections).to.be.a('number');\r",
+											"    pm.expect(responseBody.currentImmediateSyncs).to.be.a('number');\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get user's membership info - error - no access token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get user's membership info - error - not matching auth0UserId",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/xxx/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"xxx",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Stripe",
+					"item": [
+						{
+							"name": "Get link to buy membership",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// -the user does not have a subscription yet\r",
+											"\r",
+											" pm.test(\"Response status code is 200 OK\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    \r",
+											"    var responseBody = pm.response.text();\r",
+											"    \r",
+											"    pm.expect(responseBody.startsWith(\"https://checkout.stripe.com/c/pay/\")).to.be.true;\r",
+											"\r",
+											"    var urlPattern = /^(http|https):\\/\\/[^\\s/$.?#].[^\\s]*$/;\r",
+											"\r",
+											"    pm.expect(responseBody).to.match(urlPattern);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Hobby\",\r\n    \"connectionsOver\": 0\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy membership - error - invalid number of connections over",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// -the user does not have a subscription yet\r",
+											"\r",
+											"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+											"    pm.response.to.have.status(400);\r",
+											"\r",
+											"    const responseBody = pm.response.text();\r",
+											"\r",
+											"    var expectedMessages = [\r",
+											"    \"connectionsOver must not be less than 0\"\r",
+											"    ];\r",
+											"\r",
+											"    expectedMessages.forEach(function(message) {\r",
+											"        pm.expect(responseBody).to.include(message);\r",
+											"    });\r",
+											"\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Hobby\",\r\n    \"connectionsOver\": -1\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy membership - error - invalid name of membership",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// -the user does not have a subscription yet\r",
+											"\r",
+											"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+											"    pm.response.to.have.status(400);\r",
+											"\r",
+											"    const responseBody = pm.response.text();\r",
+											"\r",
+											"    var expectedMessages = [\r",
+											"    \"name must be one of the following values: Hobby, Junior, Senior\"\r",
+											"    ];\r",
+											"\r",
+											"    expectedMessages.forEach(function(message) {\r",
+											"        pm.expect(responseBody).to.include(message);\r",
+											"    });\r",
+											"\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Asdf\",\r\n    \"connectionsOver\": 0\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy membership - error - not matching auth0UserId",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Hobby\",\r\n    \"connectionsOver\": 0\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/xxx/stripe/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"xxx",
+										"stripe",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy membership - error - no access token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Hobby\",\r\n    \"connectionsOver\": 0\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy membership - error - user already has a subscription",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// -the user does have a subscription yet\r",
+											"\r",
+											" pm.test(\"Response status code is 400 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(400);\r",
+											"    \r",
+											"    var responseBody = pm.response.text();\r",
+											"\r",
+											"    var expectedResponse = \"User already has a subscription\";\r",
+											"\r",
+											"    pm.expect(responseBody).to.include(expectedResponse);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Hobby\",\r\n    \"connectionsOver\": 0\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy immediate syncs",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// - valid quantity in request body\r",
+											"\r",
+											" pm.test(\"Response status code is 200 OK\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    \r",
+											"    var responseBody = pm.response.text();\r",
+											"    \r",
+											"    pm.expect(responseBody.startsWith(\"https://checkout.stripe.com/c/pay/\")).to.be.true;\r",
+											"\r",
+											"    var urlPattern = /^(http|https):\\/\\/[^\\s/$.?#].[^\\s]*$/;\r",
+											"\r",
+											"    pm.expect(responseBody).to.match(urlPattern);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"quantity\": 40\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/buyImmediateSyncs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"buyImmediateSyncs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy immediate syncs - error - no access token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"quantity\": 40\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/buyImmediateSyncs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"buyImmediateSyncs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy immediate syncs - error - not matching auth0UserId",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"quantity\": 40\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/xxx/stripe/buyImmediateSyncs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"xxx",
+										"stripe",
+										"buyImmediateSyncs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy immediate syncs - error - invalid quantity",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// - invalid quantity in request body\r",
+											"\r",
+											" pm.test(\"Response status code is 400 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(400);\r",
+											"    \r",
+											"    var responseBody = pm.response.text();\r",
+											"\r",
+											"    var expectedResponse = \"Invalid quantity\";\r",
+											"\r",
+											"    pm.expect(responseBody).to.include(expectedResponse);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"quantity\": 33\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/buyImmediateSyncs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"buyImmediateSyncs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get customer portal link",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// - valid quantity in request body\r",
+											"\r",
+											" pm.test(\"Response status code is 200 OK\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"    \r",
+											"    var responseBody = pm.response.text();\r",
+											"    \r",
+											"    pm.expect(responseBody.startsWith(\"https://billing.stripe.com/p/session/\")).to.be.true;\r",
+											"\r",
+											"    var urlPattern = /^(http|https):\\/\\/[^\\s/$.?#].[^\\s]*$/;\r",
+											"\r",
+											"    pm.expect(responseBody).to.match(urlPattern);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/customerPortal",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"customerPortal"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get customer portal link - error - no access token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/customerPortal",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"customerPortal"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get customer portal link - error - not matching auth0UserId",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/xxx/stripe/customerPortal",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"xxx",
+										"stripe",
+										"customerPortal"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Stripe webhook",
+					"item": [
+						{
+							"name": "Send webhook",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// This request has no test because the incoming webhook is directed by Stripe and its processing is handled by the library"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:3001/api/v2/stripe/webhook",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"stripe",
+										"webhook"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Sync logs",
+					"item": [
+						{
+							"name": "Get user's sync logs",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// Prerequisites:\r",
+											"// - at least one sync log\r",
+											"\r",
+											"pm.test(\"Response status code is 200 OK\", function () {\r",
+											"    pm.response.to.have.status(200);\r",
+											"\r",
+											"    const responseBody = pm.response.json();\r",
+											"\r",
+											"    pm.expect(responseBody).to.be.an('array');\r",
+											"\r",
+											"    const jobLog = responseBody[0];\r",
+											"\r",
+											"    pm.expect(jobLog._id).to.be.a(\"string\");\r",
+											"    pm.expect(jobLog.userId).to.be.a(\"string\");\r",
+											"    pm.expect(jobLog.newBalance).to.be.a(\"number\");\r",
+											"    pm.expect(jobLog.change).to.be.a(\"number\");\r",
+											"    pm.expect(jobLog.date).to.be.a(\"number\");\r",
+											"    pm.expect(jobLog.type).to.be.a(\"string\");\r",
+											"    pm.expect(jobLog.hasOwnProperty(\"jobLogId\")).to.be.true;\r",
+											"    pm.expect(jobLog.description).to.be.a(\"string\");\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/syncLogs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"syncLogs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get user's sync logs - error - no access token",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/syncLogs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"syncLogs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get user's sync logs - error - not matching auth0UserId",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+											"    pm.response.to.have.status(401);\r",
+											"});\r",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/xxx/syncLogs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"xxx",
+										"syncLogs"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Connection",
+			"item": [
+				{
+					"name": "Create new connection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has at least one available connection\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 201 Created\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody.userId).to.not.be.null;\r",
+									"    pm.expect(responseBody.userId).to.be.a(\"string\");\r",
+									"    pm.expect(responseBody.userConnectionId).to.not.be.null;\r",
+									"    pm.expect(responseBody.userConnectionId).to.be.a(\"number\");\r",
+									"\r",
+									"    // configSyncJobDefinition\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.schedule).to.eql(\"00 00 02 * * 1,2,3\");\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.lastJobTime).to.null;\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.status).to.null;\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.have.lengthOf(3);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.include(0);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.include(1);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.include(2);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.syncTime).to.eql(\"02:00\");\r",
+									"\r",
+									"    // timeEntrySyncJobDefinition\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.schedule).to.eql(\"00 00 02 * * 1,2\");\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.lastJobTime).to.null;\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.status).to.null;\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.have.lengthOf(2);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.include(0);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.include(1);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.syncTime).to.eql(\"02:00\");\r",
+									"\r",
+									"    // firstService\r",
+									"    pm.expect(responseBody.firstService.name).to.eql(\"Toggl Track\");\r",
+									"    pm.expect(responseBody.firstService.config.userId.toString()).to.eql(pm.globals.get('togglTrackUserId'));\r",
+									"    pm.expect(responseBody.firstService.config.apiKey).to.eql(pm.globals.get('togglTrackApiKey'));\r",
+									"    pm.expect(responseBody.firstService.config.workspace.id.toString()).to.eql(pm.globals.get('selectedTogglTrackWorkspace'));\r",
+									"    pm.expect(responseBody.firstService.config.workspace.name).to.eql(pm.globals.get('selectedTogglTrackWorkspaceName'));\r",
+									"\r",
+									"\r",
+									"    // secondService\r",
+									"    pm.expect(responseBody.secondService.name).to.eql(\"Redmine\");\r",
+									"    pm.expect(responseBody.secondService.config.userId.toString()).to.eql(pm.globals.get('redmineUserId'));\r",
+									"    pm.expect(responseBody.secondService.config.apiKey).to.eql(pm.globals.get('redmineApiKey'));\r",
+									"    pm.expect(responseBody.secondService.config.apiPoint).to.eql(pm.globals.get('redmineApiPoint'));\r",
+									"    pm.expect(responseBody.secondService.config.defaultTimeEntryActivity.id.toString()).to.eql(pm.globals.get('selectedRedmineDefaultTimeEntryActivity'));\r",
+									"    pm.expect(responseBody.secondService.config.defaultTimeEntryActivity.name).to.eql(pm.globals.get('selectedRedmineDefaultTimeEntryActivityName'));\r",
+									"\r",
+									"\r",
+									"    pm.expect(responseBody.isActive).to.be.true;\r",
+									"    pm.expect(responseBody.deleteTimestamp).to.be.null;\r",
+									"    pm.expect(responseBody.createdTimestamp).to.be.a(\"number\");\r",
+									"    pm.expect(responseBody.mappings).to.eql([]);\r",
+									"    pm.expect(responseBody._id).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - missing and invalid tool property",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"First tool is missing tool property\",\r",
+									"    \"Second tool has invalid tool property\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"asdf\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - invalid body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"syncTime must match /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/ regular expression\",\r",
+									"    \"everyHour must be a boolean value\",\r",
+									"    \"each value in selectionOfDays must not be greater than 6\",\r",
+									"    \"firstTool must be an object\",\r",
+									"    \"each value in selectionOfDays must not be less than 0\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            -1\r\n        ],\r\n        \"syncTime\": \"33:87\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": \"xxx\",\r\n        \"selectionOfDays\": [\r\n            7\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": \"asdf\",\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - invalid tool config attributes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"        \"Invalid toggl track api key.\",\r",
+									"        \"Invalid redmine api key or api point.\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"xxxxxx\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"https://seznam.cz\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - missing tool config attributes Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"        \"First tool is missing togglTrackApiKey\",\r",
+									"        \"Second tool is missing selectedRedmineDefaultTimeEntryActivity\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - both tools are the same",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.eql(\"Incorrect request body: [\\\"Both tools are the same\\\"]\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create new connection - error - sync every hour not enabled",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.eql(\"Incorrect request body: [\\\"Sync every hour is not enabled for your membership.\\\"]\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": true,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user's connections",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.an('array');\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user's connections - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user's connections - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get connection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.an('object');\r",
+									"    pm.expect(responseBody._id).to.be.eql(pm.globals.get('connectionId'));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get connection - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get connection - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get connection - error - invalid connectionId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.an('object');\r",
+									"    pm.expect(responseBody._id).to.be.eql(pm.globals.get('connectionId'));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/xxx",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"xxx"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody.userId).to.not.be.null;\r",
+									"    pm.expect(responseBody.userId).to.be.a(\"string\");\r",
+									"    pm.expect(responseBody.userConnectionId).to.not.be.null;\r",
+									"    pm.expect(responseBody.userConnectionId).to.be.a(\"number\");\r",
+									"\r",
+									"    // configSyncJobDefinition\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.schedule).to.eql(\"00 33 22 * * 4,5\");\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.have.lengthOf(2);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.include(3);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.include(4);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.syncTime).to.eql(\"22:33\");\r",
+									"\r",
+									"    // timeEntrySyncJobDefinition\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.schedule).to.eql(\"00 44 11 * * 6,0\");\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.have.lengthOf(2);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.include(5);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.include(6);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.syncTime).to.eql(\"11:44\");\r",
+									"\r",
+									"    // firstService\r",
+									"    pm.expect(responseBody.firstService.name).to.eql(\"Redmine\");\r",
+									"    pm.expect(responseBody.firstService.config.userId.toString()).to.eql(pm.globals.get('redmineUserId'));\r",
+									"    pm.expect(responseBody.firstService.config.apiKey).to.eql(pm.globals.get('redmineApiKey'));\r",
+									"    pm.expect(responseBody.firstService.config.apiPoint).to.eql(pm.globals.get('redmineApiPoint'));\r",
+									"    pm.expect(responseBody.firstService.config.defaultTimeEntryActivity.id.toString()).to.eql(pm.globals.get('selectedRedmineDefaultTimeEntryActivity'));\r",
+									"    pm.expect(responseBody.firstService.config.defaultTimeEntryActivity.name).to.eql(pm.globals.get('selectedRedmineDefaultTimeEntryActivityName'));\r",
+									"\r",
+									"    // secondService\r",
+									"    pm.expect(responseBody.secondService.name).to.eql(\"Toggl Track\");\r",
+									"    pm.expect(responseBody.secondService.config.userId.toString()).to.eql(pm.globals.get('togglTrackUserId'));\r",
+									"    pm.expect(responseBody.secondService.config.apiKey).to.eql(pm.globals.get('togglTrackApiKey'));\r",
+									"    pm.expect(responseBody.secondService.config.workspace.id.toString()).to.eql(pm.globals.get('selectedTogglTrackWorkspace'));\r",
+									"    pm.expect(responseBody.secondService.config.workspace.name).to.eql(pm.globals.get('selectedTogglTrackWorkspaceName'));\r",
+									"\r",
+									"\r",
+									"    pm.expect(responseBody.isActive).to.be.true;\r",
+									"    pm.expect(responseBody.deleteTimestamp).to.be.null;\r",
+									"    pm.expect(responseBody.createdTimestamp).to.be.a(\"number\");\r",
+									"    pm.expect(responseBody.mappings).to.eql([]);\r",
+									"    pm.expect(responseBody._id).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            3, 4\r\n        ],\r\n        \"syncTime\": \"22:33\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            5, 6\r\n        ],\r\n        \"syncTime\": \"11:44\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - sync every hour not enabled",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.eql(\"Incorrect request body: [\\\"Sync every hour is not enabled for your membership.\\\"]\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": true,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - both tools are the same",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.eql(\"Incorrect request body: [\\\"Both tools are the same\\\"]\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - missing tool config attributes Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"        \"First tool is missing togglTrackApiKey\",\r",
+									"        \"Second tool is missing selectedRedmineDefaultTimeEntryActivity\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - invalid tool config attributes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"        \"Invalid toggl track api key.\",\r",
+									"        \"Invalid redmine api key or api point.\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"xxxxxx\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"https://seznam.cz\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - invalid body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"syncTime must match /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/ regular expression\",\r",
+									"    \"everyHour must be a boolean value\",\r",
+									"    \"each value in selectionOfDays must not be greater than 6\",\r",
+									"    \"firstTool must be an object\",\r",
+									"    \"each value in selectionOfDays must not be less than 0\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            -1\r\n        ],\r\n        \"syncTime\": \"33:87\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": \"xxx\",\r\n        \"selectionOfDays\": [\r\n            7\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": \"asdf\",\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - missing and invalid tool property",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"First tool is missing tool property\",\r",
+									"    \"Second tool has invalid tool property\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"asdf\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            3, 4\r\n        ],\r\n        \"syncTime\": \"22:33\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            5, 6\r\n        ],\r\n        \"syncTime\": \"11:44\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            3, 4\r\n        ],\r\n        \"syncTime\": \"22:33\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            5, 6\r\n        ],\r\n        \"syncTime\": \"11:44\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection using patch",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody.userId).to.not.be.null;\r",
+									"    pm.expect(responseBody.userId).to.be.a(\"string\");\r",
+									"    pm.expect(responseBody.userConnectionId).to.not.be.null;\r",
+									"    pm.expect(responseBody.userConnectionId).to.be.a(\"number\");\r",
+									"\r",
+									"    // configSyncJobDefinition\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.schedule).to.eql(\"00 34 12 * * 4,0\");\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.have.lengthOf(2);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.include(3);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.selectionOfDays).to.include(6);\r",
+									"    pm.expect(responseBody.configSyncJobDefinition.syncTime).to.eql(\"12:34\");\r",
+									"\r",
+									"    // timeEntrySyncJobDefinition\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.schedule).to.eql(\"00 45 23 * * 3,6\");\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.have.lengthOf(2);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.include(2);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.selectionOfDays).to.include(5);\r",
+									"    pm.expect(responseBody.timeEntrySyncJobDefinition.syncTime).to.eql(\"23:45\");\r",
+									"\r",
+									"    // firstService\r",
+									"    pm.expect(responseBody.firstService.name).to.eql(\"Toggl Track\");\r",
+									"    pm.expect(responseBody.firstService.config.userId.toString()).to.eql(pm.globals.get('togglTrackUserId'));\r",
+									"    pm.expect(responseBody.firstService.config.apiKey).to.eql(pm.globals.get('togglTrackApiKey'));\r",
+									"    pm.expect(responseBody.firstService.config.workspace.id.toString()).to.eql(pm.globals.get('selectedTogglTrackWorkspace'));\r",
+									"    pm.expect(responseBody.firstService.config.workspace.name).to.eql(pm.globals.get('selectedTogglTrackWorkspaceName'));\r",
+									"\r",
+									"\r",
+									"    // secondService\r",
+									"    pm.expect(responseBody.secondService.name).to.eql(\"Redmine\");\r",
+									"    pm.expect(responseBody.secondService.config.userId.toString()).to.eql(pm.globals.get('redmineUserId'));\r",
+									"    pm.expect(responseBody.secondService.config.apiKey).to.eql(pm.globals.get('redmineApiKey'));\r",
+									"    pm.expect(responseBody.secondService.config.apiPoint).to.eql(pm.globals.get('redmineApiPoint'));\r",
+									"    pm.expect(responseBody.secondService.config.defaultTimeEntryActivity.id.toString()).to.eql(pm.globals.get('selectedRedmineDefaultTimeEntryActivity'));\r",
+									"    pm.expect(responseBody.secondService.config.defaultTimeEntryActivity.name).to.eql(pm.globals.get('selectedRedmineDefaultTimeEntryActivityName'));\r",
+									"\r",
+									"\r",
+									"    pm.expect(responseBody.isActive).to.be.true;\r",
+									"    pm.expect(responseBody.deleteTimestamp).to.be.null;\r",
+									"    pm.expect(responseBody.createdTimestamp).to.be.a(\"number\");\r",
+									"    pm.expect(responseBody._id).to.be.a(\"string\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"isActive\": true,\r\n\t\"configSyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t3, 6\r\n\t\t],\r\n\t\t\"syncTime\": \"12:34\"\r\n\t},\r\n\t\"timeEntrySyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t2, 5\r\n\t\t],\r\n\t\t\"syncTime\": \"23:45\"\r\n\t}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection using patch - error - sync every hour not enabled",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.eql(\"Incorrect request body: [\\\"Sync every hour is not enabled for your membership.\\\"]\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"isActive\": true,\r\n\t\"configSyncJobDefinition\": {\r\n\t\t\"everyHour\": true,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t3, 6\r\n\t\t],\r\n\t\t\"syncTime\": \"12:34\"\r\n\t},\r\n\t\"timeEntrySyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t2, 5\r\n\t\t],\r\n\t\t\"syncTime\": \"23:45\"\r\n\t}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection using patch - error - invalid body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the user is logged in using an email\r",
+									"// - the user has a Junior plan\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"syncTime must match /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/ regular expression\",\r",
+									"    \"everyHour must be a boolean value\",\r",
+									"    \"each value in selectionOfDays must not be greater than 6\",\r",
+									"    \"each value in selectionOfDays must not be less than 0\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"isActive\": true,\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": \"xxx\",\r\n        \"selectionOfDays\": [\r\n            -1, 7\r\n        ],\r\n        \"syncTime\": \"33:87\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": \"xxx\",\r\n        \"selectionOfDays\": [\r\n            7\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection using patch - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"isActive\": true,\r\n\t\"configSyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t3, 6\r\n\t\t],\r\n\t\t\"syncTime\": \"12:34\"\r\n\t},\r\n\t\"timeEntrySyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t2, 5\r\n\t\t],\r\n\t\t\"syncTime\": \"23:45\"\r\n\t}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection using patch  - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"isActive\": true,\r\n\t\"configSyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t3, 6\r\n\t\t],\r\n\t\t\"syncTime\": \"12:34\"\r\n\t},\r\n\t\"timeEntrySyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t2, 5\r\n\t\t],\r\n\t\t\"syncTime\": \"23:45\"\r\n\t}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete connection",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is not already deleted\r",
+									"\r",
+									"pm.test(\"Response status code is 204 No Content\", function () {\r",
+									"    pm.response.to.have.status(204);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjVRVXVtcXc5dmVlVWhVaXhWVDJScCJ9.eyJpc3MiOiJodHRwczovL2Rldi02aXllemdocXM0NDR0MXdmLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJmYWNlYm9va3w2MDU2OTIzMjAxMDQxNTAyIiwiYXVkIjpbImh0dHBzOi8vYXV0aDAudGltZXIydGlja2V0LmNvbSIsImh0dHBzOi8vZGV2LTZpeWV6Z2hxczQ0NHQxd2YudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY4MzczODkxNiwiZXhwIjoxNjgzODI1MzE2LCJhenAiOiJ3c2tBNFNrQnB5ZE0zNXV2VmhEdFRzdkkwTGhIeDQ2bSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.vt2RGybcoxxTIRqbLsPuuwKlrg5Mwd81RW39mIwojjAbXzRwGYUfvdtzf7Zl4746HHQKEv6_zDD64oEwws-ZtsbbD3_asn8IOdz5z0oNktjF55J_uRf6qh76IO6zlPA3QmBzGp5pe76Z2qzpD5a_O6QnGPVnxv5kLCAJW9NfKdnnRki0SFjfHgaSR-O1ciWBt_i4b5K7gFYs3ZvM8iNSslzzjZH5YAx0kRoVR9HX3DZ6AQ7lGle6DOh8x0HEd3jw7t5ZLS_YM23bmuwHpGVWnjW0by66qgvNURoM1c7IfjGSI2cnYKigvWMx7E9SYADfyOE_zRua-mDfxl36AYhZ1A",
+								"type": "default",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete connection - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete connection - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjVRVXVtcXc5dmVlVWhVaXhWVDJScCJ9.eyJpc3MiOiJodHRwczovL2Rldi02aXllemdocXM0NDR0MXdmLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJmYWNlYm9va3w2MDU2OTIzMjAxMDQxNTAyIiwiYXVkIjpbImh0dHBzOi8vYXV0aDAudGltZXIydGlja2V0LmNvbSIsImh0dHBzOi8vZGV2LTZpeWV6Z2hxczQ0NHQxd2YudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY4MzczODkxNiwiZXhwIjoxNjgzODI1MzE2LCJhenAiOiJ3c2tBNFNrQnB5ZE0zNXV2VmhEdFRzdkkwTGhIeDQ2bSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.vt2RGybcoxxTIRqbLsPuuwKlrg5Mwd81RW39mIwojjAbXzRwGYUfvdtzf7Zl4746HHQKEv6_zDD64oEwws-ZtsbbD3_asn8IOdz5z0oNktjF55J_uRf6qh76IO6zlPA3QmBzGp5pe76Z2qzpD5a_O6QnGPVnxv5kLCAJW9NfKdnnRki0SFjfHgaSR-O1ciWBt_i4b5K7gFYs3ZvM8iNSslzzjZH5YAx0kRoVR9HX3DZ6AQ7lGle6DOh8x0HEd3jw7t5ZLS_YM23bmuwHpGVWnjW0by66qgvNURoM1c7IfjGSI2cnYKigvWMx7E9SYADfyOE_zRua-mDfxl36AYhZ1A",
+								"type": "default",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete connection - error - invalid or already deleted connectionId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"        pm.response.to.have.status(400);\r",
+									"    })"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjVRVXVtcXc5dmVlVWhVaXhWVDJScCJ9.eyJpc3MiOiJodHRwczovL2Rldi02aXllemdocXM0NDR0MXdmLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJmYWNlYm9va3w2MDU2OTIzMjAxMDQxNTAyIiwiYXVkIjpbImh0dHBzOi8vYXV0aDAudGltZXIydGlja2V0LmNvbSIsImh0dHBzOi8vZGV2LTZpeWV6Z2hxczQ0NHQxd2YudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY4MzczODkxNiwiZXhwIjoxNjgzODI1MzE2LCJhenAiOiJ3c2tBNFNrQnB5ZE0zNXV2VmhEdFRzdkkwTGhIeDQ2bSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.vt2RGybcoxxTIRqbLsPuuwKlrg5Mwd81RW39mIwojjAbXzRwGYUfvdtzf7Zl4746HHQKEv6_zDD64oEwws-ZtsbbD3_asn8IOdz5z0oNktjF55J_uRf6qh76IO6zlPA3QmBzGp5pe76Z2qzpD5a_O6QnGPVnxv5kLCAJW9NfKdnnRki0SFjfHgaSR-O1ciWBt_i4b5K7gFYs3ZvM8iNSslzzjZH5YAx0kRoVR9HX3DZ6AQ7lGle6DOh8x0HEd3jw7t5ZLS_YM23bmuwHpGVWnjW0by66qgvNURoM1c7IfjGSI2cnYKigvWMx7E9SYADfyOE_zRua-mDfxl36AYhZ1A",
+								"type": "default",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/xxx",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"xxx"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Restore deletion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is already deleted\r",
+									"\r",
+									"pm.test(\"Response status code is 204 No Content\", function () {\r",
+									"    pm.response.to.have.status(204);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/restore",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"restore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Restore deletion - error - invalid connectionId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is already deleted\r",
+									"\r",
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/xxx/restore",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"xxx",
+								"restore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Restore - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/restore",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"restore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Restore - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/restore",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"restore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync config objects",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is active\r",
+									"// - user has at least 1 immediate sync\r",
+									" \r",
+									" pm.test(\"Response status code is 204 No Content\", function () {\r",
+									"    pm.response.to.have.status(204);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncConfigObjects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncConfigObjects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync config objects  - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections/{{connectionId}}/syncConfigObjects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections",
+								"{{connectionId}}",
+								"syncConfigObjects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync config objects  - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncConfigObjects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncConfigObjects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync config objects - error - connection is not active",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is not active\r",
+									" \r",
+									" pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.eql(\"Connection is not active\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncConfigObjects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncConfigObjects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync config objects - error - connection not exists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} not exists\r",
+									" \r",
+									" pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.eql(\"Error getting connection\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/xxx/syncConfigObjects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"xxx",
+								"syncConfigObjects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync config objects - error - not enough immediate syncs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is active\r",
+									"// - user has 0 immediate syncs\r",
+									" \r",
+									" pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.eql(\"User has not enough immediate syncs left.\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncConfigObjects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncConfigObjects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync time entries",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is active\r",
+									"// - user has at least 1 immediate sync\r",
+									" \r",
+									" pm.test(\"Response status code is 204 No Content\", function () {\r",
+									"    pm.response.to.have.status(204);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncTimeEntries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncTimeEntries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync time entries  - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/connections/{{connectionId}}/syncTimeEntries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"connections",
+								"{{connectionId}}",
+								"syncTimeEntries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync time entries  - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncTimeEntries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncTimeEntries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync time entries - error - connection is not active",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is not active\r",
+									" \r",
+									" pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.eql(\"Connection is not active\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncTimeEntries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncTimeEntries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync time entries - error - connection not exists",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} not exists\r",
+									" \r",
+									" pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.eql(\"Error getting connection\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/xxx/syncTimeEntries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"xxx",
+								"syncTimeEntries"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync time entries - error - not enough immediate syncs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" // Prerequisites:\r",
+									"// - the connection {{connectionId}} exists and it is active\r",
+									"// - user has 0 immediate syncs\r",
+									" \r",
+									" pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.eql(\"User has not enough immediate syncs left.\");\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncTimeEntries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncTimeEntries"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "JobLogs",
+			"item": [
+				{
+					"name": "Get user's job logs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - at least one job log\r",
+									"\r",
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.an('array');\r",
+									"\r",
+									"    const jobLog = responseBody[0];\r",
+									"\r",
+									"    pm.expect(jobLog._id).to.be.a(\"string\");\r",
+									"    pm.expect(jobLog.userId).to.be.a(\"string\");\r",
+									"    pm.expect(jobLog.connectionId).to.be.a(\"string\");\r",
+									"    pm.expect(jobLog.userConnectionId).to.be.a(\"number\");\r",
+									"    pm.expect(jobLog.connectionBetween).to.be.a(\"string\");\r",
+									"    pm.expect(jobLog.type).to.be.a(\"string\");\r",
+									"    pm.expect(jobLog.origin).to.be.a(\"string\");\r",
+									"    pm.expect(jobLog.status).to.be.a(\"string\");\r",
+									"    pm.expect(jobLog.scheduledDate).to.be.a(\"number\");\r",
+									"    pm.expect(jobLog.errors).to.be.a(\"array\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/jobLogs",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"jobLogs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user's job logs - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/jobLogs",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"jobLogs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user's job logs - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/jobLogs",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"jobLogs"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Synced services config",
+			"item": [
+				{
+					"name": "Get redmine time entry activities",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody.user_id).to.be.a(\"number\");\r",
+									"    pm.expect(responseBody.time_entry_activities).to.be.a(\"array\");\r",
+									"\r",
+									"    const activities = responseBody.time_entry_activities;\r",
+									"\r",
+									"    activities.forEach(function(activity) {\r",
+									"        pm.expect(activity.id).to.be.a('number');\r",
+									"        pm.expect(activity.name).to.be.a('string');\r",
+									"    });\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/redmine_time_entry_activities?api_key={{redmineApiKey}}&api_point={{redmineApiPoint}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"redmine_time_entry_activities"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{redmineApiKey}}"
+								},
+								{
+									"key": "api_point",
+									"value": "{{redmineApiPoint}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get redmine time entry activities - error - invalid properties",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/redmine_time_entry_activities?api_key=xxx&api_point={{redmineApiPoint}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"redmine_time_entry_activities"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "xxx"
+								},
+								{
+									"key": "api_point",
+									"value": "{{redmineApiPoint}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get redmine time entry activities - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/redmine_time_entry_activities?api_key={{redmineApiKey}}&api_point={{redmineApiPoint}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"redmine_time_entry_activities"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{redmineApiKey}}"
+								},
+								{
+									"key": "api_point",
+									"value": "{{redmineApiPoint}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get toggl track workspaces",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody.user_id).to.be.a(\"number\");\r",
+									"    pm.expect(responseBody.workspaces).to.be.a(\"array\");\r",
+									"\r",
+									"    const workspaces = responseBody.workspaces;\r",
+									"\r",
+									"    workspaces.forEach(function(activity) {\r",
+									"        pm.expect(activity.id).to.be.a('number');\r",
+									"        pm.expect(activity.name).to.be.a('string');\r",
+									"    });\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/toggl_track_workspaces?api_key={{togglTrackApiKey}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"toggl_track_workspaces"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{togglTrackApiKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get toggl track workspaces - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/toggl_track_workspaces?api_key={{togglTrackApiKey}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"toggl_track_workspaces"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{togglTrackApiKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get toggl track workspaces - error - invalid properties",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									" pm.test(\"Response status code is 403 Forbidden\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/toggl_track_workspaces?api_key=xxx",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"toggl_track_workspaces"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "xxx"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Get user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - user exists\r",
+									"\r",
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.an('object');\r",
+									"    pm.expect(responseBody._id).to.be.a('string');\r",
+									"    pm.expect(responseBody.auth0UserId).to.be.eql(decodeURIComponent(pm.globals.get('auth0UserId')));\r",
+									"\r",
+									"    var emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/;\r",
+									"    pm.expect(responseBody.email).to.match(emailPattern);\r",
+									"\r",
+									"    var timePattern = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/;\r",
+									"    pm.expect(responseBody.registratedDate).to.match(timePattern);\r",
+									"    \r",
+									"    pm.expect(responseBody.timeZone).to.be.a('string');\r",
+									"    pm.expect(responseBody.notifiactionSettings).to.be.an('object');\r",
+									"    pm.expect(responseBody.notifiactionSettings.syncProblemsInfo).to.be.a('boolean');\r",
+									"\r",
+									"    pm.expect(responseBody.connectionId).to.be.a('number');\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - user exists\r",
+									"// - user does not have an email selected\r",
+									"\r",
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const responseBody = pm.response.json();\r",
+									"\r",
+									"    pm.expect(responseBody).to.be.an('object');\r",
+									"    pm.expect(responseBody._id).to.be.a('string');\r",
+									"    pm.expect(responseBody.auth0UserId).to.be.eql(decodeURIComponent(pm.globals.get('auth0UserId')));\r",
+									"\r",
+									"    pm.expect(responseBody.email).to.be.eql(\"test@email.cz\");\r",
+									"\r",
+									"    var timePattern = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/;\r",
+									"    pm.expect(responseBody.registratedDate).to.match(timePattern);\r",
+									"    \r",
+									"    pm.expect(responseBody.timeZone).to.be.eql('Europe/London');\r",
+									"    pm.expect(responseBody.notifiactionSettings).to.be.an('object');\r",
+									"    pm.expect(responseBody.notifiactionSettings.syncProblemsInfo).to.be.eql(true);\r",
+									"\r",
+									"    pm.expect(responseBody.connectionId).to.be.a('number');\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"timeZone\": \"Europe/London\",\r\n    \"email\": \"test@email.cz\",\r\n    \"syncProblemsInfo\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user - error - invalid time zone",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"timeZone must be one of the following values: \"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"timeZone\": \"Xxx\",\r\n    \"email\": \"test@email.cz\",\r\n    \"syncProblemsInfo\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user - error - invalid sync problems info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"syncProblemsInfo must be a boolean value\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"timeZone\": \"Europe/London\",\r\n    \"email\": \"test@email.cz\",\r\n    \"syncProblemsInfo\": \"asdf\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user - error - invalid email format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 400 Bad Request\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"\r",
+									"    var expectedMessages = [\r",
+									"    \"email must be an email\"\r",
+									"    ];\r",
+									"\r",
+									"    expectedMessages.forEach(function(message) {\r",
+									"        pm.expect(responseBody).to.include(message);\r",
+									"    });\r",
+									"\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"timeZone\": \"Europe/London\",\r\n    \"email\": \"testemail.cz\",\r\n    \"syncProblemsInfo\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"timeZone\": \"Europe/Prague\",\r\n    \"email\": \"test@email.cz\",\r\n    \"syncProblemsInfo\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user - error - no access token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"timeZone\": \"Europe/Prague\",\r\n    \"email\": \"test@email.cz\",\r\n    \"syncProblemsInfo\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - user exists\r",
+									"// - user is logged in not using social login\r",
+									"\r",
+									"pm.test(\"Response status code is 200 OK\", function () {\r",
+									"    \r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    var responseBody = pm.response.text();\r",
+									"\r",
+									"    var urlPattern = /^(http|https):\\/\\/[^\\s/$.?#].[^\\s]*$/;\r",
+									"\r",
+									"    pm.expect(responseBody).to.match(urlPattern);\r",
+									"\r",
+									"    pm.expect(responseBody).includes(\".auth0.com/\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							},
+							{
+								"key": "Origin",
+								"value": "http://localhost:8081",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/changePassword",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"changePassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change password - error - unable to change password when using social login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Prerequisites:\r",
+									"// - user exists\r",
+									"// - user is logged in using social login\r",
+									"\r",
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(400);\r",
+									"\r",
+									"    const responseBody = pm.response.text();\r",
+									"    pm.expect(responseBody).to.be.eql(\"Unable to change password for user using social login.\");\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							},
+							{
+								"key": "Origin",
+								"value": "http://localhost:8081",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/changePassword",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"changePassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change password - error - no access token Copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							},
+							{
+								"key": "Origin",
+								"value": "http://localhost:8081",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/changePassword",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"changePassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change password - error - not matching auth0UserId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response status code is 401 Unauthorized\", function () {\r",
+									"    pm.response.to.have.status(401);\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							},
+							{
+								"key": "Origin",
+								"value": "http://localhost:8081",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/xxx/changePassword",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"xxx",
+								"changePassword"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

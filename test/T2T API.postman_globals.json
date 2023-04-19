@@ -1,0 +1,81 @@
+{
+	"id": "50dca3e7-243c-46d6-8a1a-cc8f59a94023",
+	"values": [
+		{
+			"key": "connectionId",
+			"value": "64a92c6758a76209af3eecaa",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "accessToken",
+			"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjVRVXVtcXc5dmVlVWhVaXhWVDJScCJ9.eyJpc3MiOiJodHRwczovL2Rldi02aXllemdocXM0NDR0MXdmLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2NDY3MWE2NmRhNDhkZmRkYjEzMjc0MzciLCJhdWQiOlsiaHR0cHM6Ly9hdXRoMC50aW1lcjJ0aWNrZXQuY29tIiwiaHR0cHM6Ly9kZXYtNml5ZXpnaHFzNDQ0dDF3Zi51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNjkyMDI0MTMwLCJleHAiOjE2OTIxMTA1MzAsImF6cCI6Indza0E0U2tCcHlkTTM1dXZWaER0VHN2STBMaEh4NDZtIiwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCJ9.sWBJoGp0hjJ4trNeb7zO1TIfuuZu2Fy2A_Ld5rRvo1f3bvyTpPaSe9xasOUz9rc4m-_vDmfxADy826cVv1wt-pYINr8A4UrU_EHT5AoF5Lz2pHZDwef7PfaipfLd7i0fdQxCUk62QDhPsJx6nkSn4tngF5fU9M73fDHYzLdObsJ7ZvVlJUacRPIunzS7UoDT-LqHBFygRka-JCtXCQnhWAuoi0Gapwby8Y-6xGXivMvoQuTwuar4wfS7z1pHt3Z2BZu31hCUgNLgk4oUhNsrZI046GKVfM5XSG_AcjeQVRHW432BThcc6GWjTQVmmr3VnB9v_-45SPuNtYoAhluTmg",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "auth0UserId",
+			"value": "auth0%7C64671a66da48dfddb1327437",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "togglTrackApiKey",
+			"value": "b220853057f8adc34aa91ad53ebc9cab",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedTogglTrackWorkspace",
+			"value": "7384141",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedTogglTrackWorkspaceName",
+			"value": "M04pauldev's workspace",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "togglTrackUserId",
+			"value": "9495553",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "redmineApiKey",
+			"value": "f4246708b54617fb4cdd99993ac9bf531a310206",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "redmineApiPoint",
+			"value": "https://dbs.fit.cvut.cz/redmine/",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedRedmineDefaultTimeEntryActivity",
+			"value": "8",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedRedmineDefaultTimeEntryActivityName",
+			"value": "Návrh",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "redmineUserId",
+			"value": "332",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"name": "Globals",
+	"_postman_variable_scope": "globals",
+	"_postman_exported_at": "2023-08-26T10:27:42.011Z",
+	"_postman_exported_using": "Postman/10.17.1"
+}
