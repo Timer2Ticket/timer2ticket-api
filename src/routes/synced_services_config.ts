@@ -11,25 +11,31 @@ router.use(express.json());
 router.use((req, res, next) => {
   console.log(`Time: ${Date.now()}`);
 
-  // verify JWT
+  res.append('Access-Control-Allow-Origin', ['*']);
+  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  res.append('Access-Control-Allow-Headers', 'Content-Type');
 
-  const tokenFromHeader = req.headers["x-access-token"];
+  next();
 
-  if (!tokenFromHeader) {
-    return res.sendStatus(403);
-  }
-
-  const token = Array.isArray(tokenFromHeader) ? tokenFromHeader[0] : tokenFromHeader;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jwt.verify(token, Constants.jwtSecret, (err: any, decoded: any) => {
-    if (err) {
-      return res.status(401).send('invalid access token');
-    }
-    res.locals.userIdFromToken = decoded.id;
-    res.locals.token = token;
-    next();
-  });
+  // // verify JWT
+  //
+  // const tokenFromHeader = req.headers["x-access-token"];
+  //
+  // if (!tokenFromHeader) {
+  //   return res.sendStatus(403);
+  // }
+  //
+  // const token = Array.isArray(tokenFromHeader) ? tokenFromHeader[0] : tokenFromHeader;
+  //
+  // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // jwt.verify(token, Constants.jwtSecret, (err: any, decoded: any) => {
+  //   if (err) {
+  //     return res.status(401).send('invalid access token');
+  //   }
+  //   res.locals.userIdFromToken = decoded.id;
+  //   res.locals.token = token;
+  // next();
+  // });
 });
 
 /**
@@ -55,42 +61,49 @@ router.get('/redmine_time_entry_activities', async (req, res) => {
     ? redmineApiPoint
     : `https://${redmineApiPoint}`;
 
-  const responseTimeEntryActivities = await superagent
-    .get(`${redmineApiPoint}enumerations/time_entry_activities.json`)
-    .accept('application/json')
-    .type('application/json')
-    .set('X-Redmine-API-Key', redmineApiKey)
-    .on('error', (err) => {
-      // on error, response with status from Redmine
-      let statusCode = 503;
-      if (err && err.status && err.status !== 401) {
-        statusCode = err.status;
-      } else if (err && err.status && err.status === 401) {
-        // do not send 401, it would lead to user logout on the client side due to error intercepting
-        statusCode = 400;
-      }
+  // encode redmine api point
+  redmineApiPoint = encodeURI(redmineApiPoint);
 
-      return res.sendStatus(statusCode);
-    });
+  let responseTimeEntryActivities: superagent.Response;
+  try {
+    responseTimeEntryActivities = await superagent
+      .get(`${redmineApiPoint}enumerations/time_entry_activities.json`)
+      .accept('application/json')
+      .type('application/json')
+      .set('X-Redmine-API-Key', redmineApiKey);
+  } catch (err) {
+    // on error, response with status from Redmine
+    let statusCode = 503;
+    if (err && err.status && err.status !== 401) {
+      statusCode = err.status;
+    } else if (err && err.status && err.status === 401) {
+      // do not send 401, it would lead to user logout on the client side due to error intercepting
+      statusCode = 400;
+    }
+
+    return res.sendStatus(statusCode);
+  }
 
   // need to grab userId (determined by api key provided)
-  const responseUserDetail = await superagent
-    .get(`${redmineApiPoint}users/current.json`)
-    .accept('application/json')
-    .type('application/json')
-    .set('X-Redmine-API-Key', redmineApiKey)
-    .on('error', (err) => {
-      // on error, response with status from Redmine
-      let statusCode = 503;
-      if (err && err.status && err.status !== 401) {
-        statusCode = err.status;
-      } else if (err && err.status && err.status === 401) {
-        // do not send 401, it would lead to user logout on the client side due to error intercepting
-        statusCode = 400;
-      }
+  let responseUserDetail;
+  try {
+    responseUserDetail = await superagent
+      .get(`${redmineApiPoint}users/current.json`)
+      .accept('application/json')
+      .type('application/json')
+      .set('X-Redmine-API-Key', redmineApiKey);
+  } catch (err) {
+    // on error, response with status from Redmine
+    let statusCode = 503;
+    if (err && err.status && err.status !== 401) {
+      statusCode = err.status;
+    } else if (err && err.status && err.status === 401) {
+      // do not send 401, it would lead to user logout on the client side due to error intercepting
+      statusCode = 400;
+    }
 
-      return res.sendStatus(statusCode);
-    });
+    return res.sendStatus(statusCode);
+  }
 
   try {
     // extract TE activities
@@ -100,7 +113,7 @@ router.get('/redmine_time_entry_activities', async (req, res) => {
         {
           id: timeEntryActivity['id'],
           name: timeEntryActivity['name'],
-        }
+        },
       );
     });
 
@@ -126,37 +139,38 @@ router.get('/toggl_track_workspaces', async (req, res) => {
     return res.sendStatus(400);
   }
 
-  const responseMe = await superagent
-    .get('https://api.track.toggl.com/api/v9/me')
-    .auth(togglTrackApiKey, 'api_token')
-    .on('error', (err) => {
-      // on error, response with status from Toggl Track
-      let statusCode = 503;
-      if (err && err.status && err.status !== 401) {
-        statusCode = err.status;
-      } else if (err && err.status && err.status === 401) {
-        // do not send 401, it would lead to user logout on the client side due to error intercepting
-        statusCode = 400;
-      }
+  let responseMe: superagent.Response;
+  try {
+    responseMe = await superagent
+      .get('https://api.track.toggl.com/api/v9/me')
+      .auth(togglTrackApiKey, 'api_token');
+  } catch (err) {
+    let statusCode = 503;
+    if (err.status && err.status !== 401) {
+      statusCode = err.status;
+    } else if (err.status && err.status === 401) {
+      statusCode = 400;
+    }
+    return res.sendStatus(statusCode);
+  }
 
-      return res.sendStatus(statusCode);
-    });
+  let responseWorkspaces: superagent.Response;
+  try {
+    responseWorkspaces = await superagent
+      .get('https://api.track.toggl.com/api/v9/me/workspaces')
+      .auth(togglTrackApiKey, 'api_token');
+  } catch (err) {
+    // on error, response with status from Toggl Track
+    let statusCode = 503;
+    if (err && err.status && err.status !== 401) {
+      statusCode = err.status;
+    } else if (err && err.status && err.status === 401) {
+      // do not send 401, it would lead to user logout on the client side due to error intercepting
+      statusCode = 400;
+    }
 
-  const responseWorkspaces = await superagent
-    .get('https://api.track.toggl.com/api/v9/me/workspaces')
-    .auth(togglTrackApiKey, 'api_token')
-    .on('error', (err) => {
-      // on error, response with status from Toggl Track
-      let statusCode = 503;
-      if (err && err.status && err.status !== 401) {
-        statusCode = err.status;
-      } else if (err && err.status && err.status === 401) {
-        // do not send 401, it would lead to user logout on the client side due to error intercepting
-        statusCode = 400;
-      }
-
-      return res.sendStatus(statusCode);
-    });
+    return res.sendStatus(statusCode);
+  }
 
   try {
     // extract workspaces
@@ -166,10 +180,10 @@ router.get('/toggl_track_workspaces', async (req, res) => {
         {
           id: workspace['id'],
           name: workspace['name'],
-        }
+        },
       );
     });
-    
+
     // extract userId
     const userId = responseMe.body['id'];
 
