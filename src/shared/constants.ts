@@ -1,3 +1,7 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('dotenv').config();
+
+
 export class Constants {
   static appPort = 3001;
 
@@ -12,4 +16,7 @@ export class Constants {
   static emailSecret = process.env.EMAIL_SECRET || '';
 
   static bcryptSaltRounds = 10;
+
+  static authAudience=process.env.AUTH0_AUDIENCE;
+  static authDomain=process.env.AUTH0_DOMAIN;
 }
