@@ -2,36 +2,29 @@ import express from 'express';
 import { databaseService } from '../shared/database_service';
 import { UserToClient } from '../models/user_to_client';
 import { Constants } from '../shared/constants';
-import { UserChangePassword } from '../models/user_change_password';
-import { Utilities } from '../shared/utilities';
+import { auth } from 'express-oauth2-jwt-bearer';
 
 const router = express.Router();
 router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
 
+// Authorization middleware. When used, the Access Token must
+// exist and be verified against the Auth0 JSON Web Key Set.
+const checkJwt = auth({
+  audience: Constants.authAudience,
+  issuerBaseURL: Constants.authDomain,
+});
+
 // middleware that is specific to this router
 router.use((req, res, next) => {
-  console.log(`Time: ${Date.now()}`);
+  console.log(`Users router calls at time: ${Date.now()}`);
 
-  // verify JWT
+  // For CORS policy
+  res.append('Access-Control-Allow-Origin', ['*']);
+  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
 
-  const tokenFromHeader = req.headers['x-access-token'];
-
-  if (!tokenFromHeader) {
-    return res.sendStatus(403);
-  }
-
-  const token = Array.isArray(tokenFromHeader) ? tokenFromHeader[0] : tokenFromHeader;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  jwt.verify(token, Constants.jwtSecret, (err: any, decoded: any) => {
-    if (err) {
-      return res.sendStatus(401);
-    }
-    res.locals.userIdFromToken = decoded.id;
-    res.locals.token = token;
-    next();
-  });
+  next();
 });
 
 /**

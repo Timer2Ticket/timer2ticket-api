@@ -17,8 +17,9 @@ const checkJwt = auth({
 
 // middleware that is specific to this router
 router.use((req, res, next) => {
-  console.log(`Time: ${Date.now()}`);
+  console.log(`Synced services config router calls at time: ${Date.now()}`);
 
+  // For CORS policy
   res.append('Access-Control-Allow-Origin', ['*']);
   res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
   res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
