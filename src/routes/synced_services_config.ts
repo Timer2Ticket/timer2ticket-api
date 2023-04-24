@@ -1,11 +1,19 @@
 import express from 'express';
-import jwt from 'jsonwebtoken';
 import superagent from 'superagent';
 import { Constants } from '../shared/constants';
+import { auth } from 'express-oauth2-jwt-bearer';
+
 
 const router = express.Router();
 router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
+
+// Authorization middleware. When used, the Access Token must
+// exist and be verified against the Auth0 JSON Web Key Set.
+const checkJwt = auth({
+  audience: Constants.authAudience,
+  issuerBaseURL: Constants.authDomain,
+});
 
 // middleware that is specific to this router
 router.use((req, res, next) => {
@@ -13,36 +21,16 @@ router.use((req, res, next) => {
 
   res.append('Access-Control-Allow-Origin', ['*']);
   res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-  res.append('Access-Control-Allow-Headers', 'Content-Type');
+  res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
 
   next();
-
-  // // verify JWT
-  //
-  // const tokenFromHeader = req.headers["x-access-token"];
-  //
-  // if (!tokenFromHeader) {
-  //   return res.sendStatus(403);
-  // }
-  //
-  // const token = Array.isArray(tokenFromHeader) ? tokenFromHeader[0] : tokenFromHeader;
-  //
-  // // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // jwt.verify(token, Constants.jwtSecret, (err: any, decoded: any) => {
-  //   if (err) {
-  //     return res.status(401).send('invalid access token');
-  //   }
-  //   res.locals.userIdFromToken = decoded.id;
-  //   res.locals.token = token;
-  // next();
-  // });
 });
 
 /**
  * Gets TE activities from Redmine to show the user (on client) which activity would be default (user decides)
  * Also requests user detail (via provided redmine api key) to extract Redmine userId and send to user with activities as well (needed for sync Redmine requests, but can be hidden from the user)
  */
-router.get('/redmine_time_entry_activities', async (req, res) => {
+router.get('/redmine_time_entry_activities', checkJwt, async (req, res) => {
   // those 2 are filled by user in the client form
   const redmineApiKey: string | undefined = req.query['api_key']?.toString();
   let redmineApiPoint: string | undefined = req.query['api_point']?.toString();
@@ -132,7 +120,7 @@ router.get('/redmine_time_entry_activities', async (req, res) => {
 /**
  * Gets Toggl Track workspaces to client
  */
-router.get('/toggl_track_workspaces', async (req, res) => {
+router.get('/toggl_track_workspaces', checkJwt, async (req, res) => {
   const togglTrackApiKey: string | undefined = req.query['api_key']?.toString();
 
   if (!togglTrackApiKey) {

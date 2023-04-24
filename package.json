@@ -5,7 +5,7 @@
   "main": "dist/src/app.js",
   "scripts": {
     "start": "tsc-watch --project . --outDir ./dist --onSuccess \"nodemon ./dist/src/app.js\"",
-    "start-test": "npm run build && node ./dist/src/app.js",
+    "start-fast": "npm run build && node ./dist/src/app.js",
     "test": "mocha -r ts-node/register './test/**/*.spec.ts'",
     "build": "tsc --build"
   },
@@ -28,6 +28,7 @@
     "class-validator": "^0.13.1",
     "dotenv": "^16.0.3",
     "express": "^4.17.1",
+    "express-oauth2-jwt-bearer": "^1.4.1",
     "jsonwebtoken": "^8.5.1",
     "mocha": "^8.3.2",
     "mongodb": "^3.6.4",
