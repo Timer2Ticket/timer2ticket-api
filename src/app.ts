@@ -12,9 +12,9 @@ const jobLogsRoutes = require('./routes/job_logs');
 const app = express();
 
 app.use('/api/v2/users', usersRoutes);
-app.use('/api/v2/jobs', jobsRoutes);
+// app.use('/api/v2/jobs', jobsRoutes);
 app.use('/api/v2/synced_services_config', syncedServicesConfigRoutes);
-app.use('/api/v2/job_logs', jobLogsRoutes);
+// app.use('/api/v2/job_logs', jobLogsRoutes);
 
 app.listen(Constants.appPort, async () => {
   await databaseService.init();
