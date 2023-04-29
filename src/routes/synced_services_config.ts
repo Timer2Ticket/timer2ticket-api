@@ -1,19 +1,11 @@
 import express from 'express';
 import superagent from 'superagent';
-import { Constants } from '../shared/constants';
-import { auth } from 'express-oauth2-jwt-bearer';
+import { auth0Commons } from '../auth0/auth0_commons';
 
 
 const router = express.Router();
 router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
-
-// Authorization middleware. When used, the Access Token must
-// exist and be verified against the Auth0 JSON Web Key Set.
-const checkJwt = auth({
-  audience: Constants.authAudience,
-  issuerBaseURL: Constants.authDomain,
-});
 
 // middleware that is specific to this router
 router.use((req, res, next) => {
@@ -22,7 +14,7 @@ router.use((req, res, next) => {
   // For CORS policy
   res.append('Access-Control-Allow-Origin', ['*']);
   res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-  res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+  res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
 
   next();
 });
@@ -31,7 +23,7 @@ router.use((req, res, next) => {
  * Gets TE activities from Redmine to show the user (on client) which activity would be default (user decides)
  * Also requests user detail (via provided redmine api key) to extract Redmine userId and send to user with activities as well (needed for sync Redmine requests, but can be hidden from the user)
  */
-router.get('/redmine_time_entry_activities', checkJwt, async (req, res) => {
+router.get('/redmine_time_entry_activities', auth0Commons.checkJwt, async (req, res) => {
   // those 2 are filled by user in the client form
   const redmineApiKey: string | undefined = req.query['api_key']?.toString();
   let redmineApiPoint: string | undefined = req.query['api_point']?.toString();
@@ -121,7 +113,7 @@ router.get('/redmine_time_entry_activities', checkJwt, async (req, res) => {
 /**
  * Gets Toggl Track workspaces to client
  */
-router.get('/toggl_track_workspaces', checkJwt, async (req, res) => {
+router.get('/toggl_track_workspaces', auth0Commons.checkJwt, async (req, res) => {
   const togglTrackApiKey: string | undefined = req.query['api_key']?.toString();
 
   if (!togglTrackApiKey) {

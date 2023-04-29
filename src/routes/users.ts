@@ -1,19 +1,11 @@
 import express from 'express';
+import { auth0Commons } from '../auth0/auth0_commons';
 import { databaseService } from '../shared/database_service';
-import { UserToClient } from '../models/user_to_client';
-import { Constants } from '../shared/constants';
-import { auth } from 'express-oauth2-jwt-bearer';
 
 const router = express.Router();
 router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
 
-// Authorization middleware. When used, the Access Token must
-// exist and be verified against the Auth0 JSON Web Key Set.
-const checkJwt = auth({
-  audience: Constants.authAudience,
-  issuerBaseURL: Constants.authDomain,
-});
 
 // middleware that is specific to this router
 router.use((req, res, next) => {
@@ -22,34 +14,49 @@ router.use((req, res, next) => {
   // For CORS policy
   res.append('Access-Control-Allow-Origin', ['*']);
   res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-  res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+  res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
 
   next();
 });
 
 /**
- * Get user with userId in parameter - needs to be 24 length string (MongoDB ObjectId)
+ * Get user with auth0UserId in parameter. If user doesn't exist, create new one.
  */
-router.get('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
-  const userId = req.params.userId;
-  const token = res.locals.token;
+router.get('/:auth0UserId', auth0Commons.checkJwt, async (req, res) => {
+  const auth0UserId = req.params.auth0UserId;
+  const token = req.header('Authorization');
 
-  // authorize if userId from JWT is the same as in userId param
-  if (!res.locals.userIdFromToken || !userId || !token) {
+  if (!auth0UserId || !token) {
     return res.sendStatus(400);
   }
 
-  if (res.locals.userIdFromToken !== userId) {
+  // token is valid because of auth0Commons.checkJwt token validation
+  const jwtPayload = auth0Commons.getPayloadInfoFromToken(token.split(' ')[1]);
+  if (!jwtPayload || !jwtPayload.sub) {
+    return res.sendStatus(400);
+  }
+
+  // check if user is authorized to get this user
+  if (jwtPayload.sub !== auth0UserId) {
     return res.sendStatus(401);
   }
 
-  const user = await databaseService.getUserById(userId);
+  const user = await databaseService.getUserByAuth0UserId(auth0UserId);
 
-  if (!user) {
-    return res.sendStatus(404);
+  // Return user if exists
+  if (user) {
+    return res.send(user);
   }
 
-  return res.send(new UserToClient(user, token));
+  try {
+    // create new user
+    const newUser = await databaseService.createUser(auth0UserId)
+
+    return res.send(newUser);
+  } catch (ex) {
+    console.log(ex);
+    return res.sendStatus(503);
+  }
 });
 
 module.exports = router;
