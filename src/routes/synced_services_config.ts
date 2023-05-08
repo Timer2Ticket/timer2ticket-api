@@ -1,6 +1,12 @@
 import express from 'express';
 import superagent from 'superagent';
-import { auth0Commons } from '../auth0/auth0_commons';
+import { authCommons } from '../shared/auth_commons';
+import {
+  getRedmineTimeEntryActivities,
+  getRedmineUserDetail,
+  getTogglTrackUser,
+  getTogglTrackWorkspaces,
+} from '../shared/services_config_functions';
 
 
 const router = express.Router();
@@ -23,7 +29,7 @@ router.use((req, res, next) => {
  * Gets TE activities from Redmine to show the user (on client) which activity would be default (user decides)
  * Also requests user detail (via provided redmine api key) to extract Redmine userId and send to user with activities as well (needed for sync Redmine requests, but can be hidden from the user)
  */
-router.get('/redmine_time_entry_activities', auth0Commons.checkJwt, async (req, res) => {
+router.get('/redmine_time_entry_activities', authCommons.checkJwt, async (req, res) => {
   // those 2 are filled by user in the client form
   const redmineApiKey: string | undefined = req.query['api_key']?.toString();
   let redmineApiPoint: string | undefined = req.query['api_point']?.toString();
@@ -33,31 +39,16 @@ router.get('/redmine_time_entry_activities', auth0Commons.checkJwt, async (req, 
     return res.sendStatus(400);
   }
 
-  // add last / if not provided by user
-  redmineApiPoint = redmineApiPoint.endsWith('/')
-    ? redmineApiPoint
-    : `${redmineApiPoint}/`;
-  // add https:// if not provided by user
-  redmineApiPoint = (redmineApiPoint.startsWith('https://') || redmineApiPoint.startsWith('http://'))
-    ? redmineApiPoint
-    : `https://${redmineApiPoint}`;
-
   // encode redmine api point
   redmineApiPoint = encodeURI(redmineApiPoint);
 
-  let responseTimeEntryActivities: superagent.Response;
-  try {
-    responseTimeEntryActivities = await superagent
-      .get(`${redmineApiPoint}enumerations/time_entry_activities.json`)
-      .accept('application/json')
-      .type('application/json')
-      .set('X-Redmine-API-Key', redmineApiKey);
-  } catch (err) {
+  const responseTimeEntryActivities: superagent.Response | number = await getRedmineTimeEntryActivities(redmineApiPoint, redmineApiKey);
+  if (!responseTimeEntryActivities || typeof responseTimeEntryActivities === 'number') {
     // on error, response with status from Redmine
     let statusCode = 503;
-    if (err && err.status && err.status !== 401) {
-      statusCode = err.status;
-    } else if (err && err.status && err.status === 401) {
+    if (responseTimeEntryActivities && responseTimeEntryActivities !== 401) {
+      statusCode = responseTimeEntryActivities;
+    } else if (responseTimeEntryActivities && responseTimeEntryActivities === 401) {
       // do not send 401, it would lead to user logout on the client side due to error intercepting
       statusCode = 400;
     }
@@ -66,19 +57,13 @@ router.get('/redmine_time_entry_activities', auth0Commons.checkJwt, async (req, 
   }
 
   // need to grab userId (determined by api key provided)
-  let responseUserDetail;
-  try {
-    responseUserDetail = await superagent
-      .get(`${redmineApiPoint}users/current.json`)
-      .accept('application/json')
-      .type('application/json')
-      .set('X-Redmine-API-Key', redmineApiKey);
-  } catch (err) {
+  const  responseUserDetail: superagent.Response | number = await getRedmineUserDetail(redmineApiPoint, redmineApiKey);
+  if (!responseUserDetail || typeof responseUserDetail === 'number') {
     // on error, response with status from Redmine
     let statusCode = 503;
-    if (err && err.status && err.status !== 401) {
-      statusCode = err.status;
-    } else if (err && err.status && err.status === 401) {
+    if (responseUserDetail && responseUserDetail !== 401) {
+      statusCode = responseUserDetail;
+    } else if (responseUserDetail && responseUserDetail === 401) {
       // do not send 401, it would lead to user logout on the client side due to error intercepting
       statusCode = 400;
     }
@@ -113,39 +98,31 @@ router.get('/redmine_time_entry_activities', auth0Commons.checkJwt, async (req, 
 /**
  * Gets Toggl Track workspaces to client
  */
-router.get('/toggl_track_workspaces', auth0Commons.checkJwt, async (req, res) => {
+router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => {
   const togglTrackApiKey: string | undefined = req.query['api_key']?.toString();
 
   if (!togglTrackApiKey) {
     return res.sendStatus(400);
   }
 
-  let responseMe: superagent.Response;
-  try {
-    responseMe = await superagent
-      .get('https://api.track.toggl.com/api/v9/me')
-      .auth(togglTrackApiKey, 'api_token');
-  } catch (err) {
+  const responseMe: superagent.Response | number = await getTogglTrackUser(togglTrackApiKey);
+  if (!responseMe || typeof responseMe === 'number') {
     let statusCode = 503;
-    if (err.status && err.status !== 401) {
-      statusCode = err.status;
-    } else if (err.status && err.status === 401) {
+    if (responseMe && responseMe !== 401) {
+      statusCode = responseMe;
+    } else if (responseMe && responseMe === 401) {
       statusCode = 400;
     }
     return res.sendStatus(statusCode);
   }
 
-  let responseWorkspaces: superagent.Response;
-  try {
-    responseWorkspaces = await superagent
-      .get('https://api.track.toggl.com/api/v9/me/workspaces')
-      .auth(togglTrackApiKey, 'api_token');
-  } catch (err) {
+  const responseWorkspaces: superagent.Response | number = await getTogglTrackWorkspaces(togglTrackApiKey);
+  if(!responseWorkspaces || typeof responseWorkspaces === 'number') {
     // on error, response with status from Toggl Track
     let statusCode = 503;
-    if (err && err.status && err.status !== 401) {
-      statusCode = err.status;
-    } else if (err && err.status && err.status === 401) {
+    if (responseWorkspaces && responseWorkspaces !== 401) {
+      statusCode = responseWorkspaces;
+    } else if (responseWorkspaces && responseWorkspaces === 401) {
       // do not send 401, it would lead to user logout on the client side due to error intercepting
       statusCode = 400;
     }

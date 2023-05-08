@@ -5,15 +5,24 @@ import { Constants } from './shared/constants';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const usersRoutes = require('./routes/users');
-const jobsRoutes = require('./routes/jobs');
+const membershipRoutes = require('./routes/membership');
+const connectionRoutes = require('./routes/connections');
+
 const syncedServicesConfigRoutes = require('./routes/synced_services_config');
-const jobLogsRoutes = require('./routes/job_logs');
+
+// const jobsRoutes = require('./routes/jobs');
+// const jobLogsRoutes = require('./routes/job_logs');
 
 const app = express();
 
-app.use('/api/v2/users', usersRoutes);
-// app.use('/api/v2/jobs', jobsRoutes);
+app.use('/api/v2/users/:auth0UserId/membership', membershipRoutes);
+app.use('/api/v2/users/:auth0UserId/connections', connectionRoutes);
+// Needs to be last, because it is catch all users route
+app.use('/api/v2/users/:auth0UserId', usersRoutes);
+
 app.use('/api/v2/synced_services_config', syncedServicesConfigRoutes);
+
+// app.use('/api/v2/jobs', jobsRoutes);
 // app.use('/api/v2/job_logs', jobLogsRoutes);
 
 app.listen(Constants.appPort, async () => {

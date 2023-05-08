@@ -1,10 +1,9 @@
 import { ObjectId } from 'mongodb';
 import { NotificationSettings } from './notification_settings';
-import { MembershipInfo } from '../membership/membership_info';
 
 export class User {
   // Mongo
-  _id!: string | ObjectId;
+  _id!: ObjectId;
 
   // Auth0
   auth0UserId!: string;
@@ -16,9 +15,8 @@ export class User {
   timeZone!: string;
   notifiactionSettings!: NotificationSettings;
 
-  // Membership
-
-  membershipInfo!: MembershipInfo;
+  // Connection user id
+  connectionId!: number;
 
   static default(auth0UserId: string): User {
     const user = new User();
@@ -27,7 +25,7 @@ export class User {
     user.registratedDate = new Date();
     user.timeZone = ''; // TODO set default timezone
     user.notifiactionSettings = new NotificationSettings();
-    user.membershipInfo = new MembershipInfo();
+    user.connectionId = 1;
     return user;
   }
 }

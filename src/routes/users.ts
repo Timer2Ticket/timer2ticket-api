@@ -1,8 +1,9 @@
 import express from 'express';
-import { auth0Commons } from '../auth0/auth0_commons';
 import { databaseService } from '../shared/database_service';
+import { Constants } from '../shared/constants';
+import { authCommons } from '../shared/auth_commons';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
 
@@ -22,24 +23,12 @@ router.use((req, res, next) => {
 /**
  * Get user with auth0UserId in parameter. If user doesn't exist, create new one.
  */
-router.get('/:auth0UserId', auth0Commons.checkJwt, async (req, res) => {
-  const auth0UserId = req.params.auth0UserId;
-  const token = req.header('Authorization');
-
-  if (!auth0UserId || !token) {
-    return res.sendStatus(400);
-  }
-
-  // token is valid because of auth0Commons.checkJwt token validation
-  const jwtPayload = auth0Commons.getPayloadInfoFromToken(token.split(' ')[1]);
-  if (!jwtPayload || !jwtPayload.sub) {
-    return res.sendStatus(400);
-  }
-
-  // check if user is authorized to get this user
-  if (jwtPayload.sub !== auth0UserId) {
+router.get('/', authCommons.checkJwt, async (req, res) => {
+  if(!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
+
+  const auth0UserId = req.params.auth0UserId;
 
   const user = await databaseService.getUserByAuth0UserId(auth0UserId);
 
@@ -50,11 +39,15 @@ router.get('/:auth0UserId', auth0Commons.checkJwt, async (req, res) => {
 
   try {
     // create new user
-    const newUser = await databaseService.createUser(auth0UserId)
+    const newUser = await databaseService.createUser(auth0UserId);
+
+    if (Constants.IS_COMMERCIAL_VERSION && newUser && newUser._id) {
+      // create new membershipInfo
+      await databaseService.createMembershipInfo(newUser._id);
+    }
 
     return res.send(newUser);
   } catch (ex) {
-    console.log(ex);
     return res.sendStatus(503);
   }
 });
