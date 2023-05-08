@@ -1,5 +1,5 @@
 import { IsIn, ValidateNested, IsDefined, IsBoolean, IsOptional, } from 'class-validator';
-import { Config } from "./config/config";
+import { Service_config } from "./config/service_config";
 
 /**
  * This class contains definitions that are same for all services
@@ -17,5 +17,5 @@ export class ServiceDefinition {
 
   @IsOptional()
   @ValidateNested()
-  config!: Config;
+  config!: Service_config;
 }

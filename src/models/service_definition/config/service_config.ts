@@ -1,6 +1,6 @@
 import { IsOptional, IsUrl, IsDefined, IsNumber } from 'class-validator';
 
-export class Config {
+export class Service_config {
   /**
    * shared
    */

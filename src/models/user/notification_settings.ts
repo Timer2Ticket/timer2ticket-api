@@ -1,4 +1,7 @@
 export class NotificationSettings {
-  immediateSyncInfo: boolean = true;
-  syncProblemsInfo: boolean = true;
+  syncProblemsInfo!: boolean;
+
+  constructor() {
+    this.syncProblemsInfo = true;
+  }
 }
