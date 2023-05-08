@@ -18,7 +18,7 @@ router.use((req, res, next) => {
 
   // For CORS policy
   res.append('Access-Control-Allow-Origin', ['*']);
-  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH');
   res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
 
   next();
