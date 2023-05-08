@@ -119,7 +119,14 @@ router.get('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting user');
   }
 
-  const connection: Connection | null = await databaseService.getConnectionById(new ObjectId(connectionId));
+  let objectId;
+  try {
+    objectId = new ObjectId(connectionId);
+  } catch (error) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  const connection: Connection | null = await databaseService.getConnectionById(objectId);
   if (!connection) {
     return res.status(400).send('Error getting connection');
   }
@@ -168,8 +175,15 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting user');
   }
 
+  let objectId;
+  try {
+    objectId = new ObjectId(connectionId);
+  } catch (error) {
+    return res.status(400).send('Error getting connection');
+  }
+
   // get current connection
-  const connection: Connection | null = await databaseService.getConnectionById(new ObjectId(connectionId));
+  const connection: Connection | null = await databaseService.getConnectionById(objectId);
   if (!connection) {
     return res.status(400).send('Error getting connection');
   }
@@ -211,8 +225,15 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting user');
   }
 
+  let objectId;
+  try {
+    objectId = new ObjectId(connectionId);
+  } catch (error) {
+    return res.status(400).send('Error getting connection');
+  }
+
   // get current connection
-  const connection: Connection | null = await databaseService.getConnectionById(new ObjectId(connectionId));
+  const connection: Connection | null = await databaseService.getConnectionById(objectId);
   if (!connection) {
     return res.status(400).send('Error getting connection');
   }
@@ -286,8 +307,15 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting user');
   }
 
+  let objectId;
+  try {
+    objectId = new ObjectId(connectionId);
+  } catch (error) {
+    return res.status(400).send('Error getting connection');
+  }
+
   // get current connection
-  const connection: Connection | null = await databaseService.getConnectionById(new ObjectId(connectionId));
+  const connection: Connection | null = await databaseService.getConnectionById(objectId);
   if (!connection) {
     return res.status(400).send('Error getting connection');
   }

@@ -76,7 +76,14 @@ export class DatabaseService {
   async getUserById(userId: string): Promise<User | null> {
     if (!this._usersCollection) return null;
 
-    const filterQuery = { _id: new ObjectId(userId) };
+    let objectId;
+    try {
+      objectId = new ObjectId(userId);
+    } catch (error) {
+      return null;
+    }
+
+    const filterQuery = { _id: objectId };
     return this._usersCollection.findOne(filterQuery);
   }
 
