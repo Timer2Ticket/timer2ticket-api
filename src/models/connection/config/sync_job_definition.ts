@@ -2,7 +2,9 @@ import { SyncJobDefinitionFromClient } from '../from_client/sync_job_definition_
 
 export class SyncJobDefinition {
   schedule!: string;
-  lastSuccessfullyDone!: number | null;
+  lastJobTime!: number | null;
+  // lastJobStatus: 'SUCCESS' | 'ERROR' | 'IN_PROGRESS' | null;
+  status!: string | null;
 
   everyHour!: boolean;
   selectionOfDays!: number[];
@@ -11,7 +13,8 @@ export class SyncJobDefinition {
 
   constructor(syncJobDefinitionFromClient: SyncJobDefinitionFromClient) {
     this.schedule = syncJobDefinitionFromClient.getCronString();
-    this.lastSuccessfullyDone = null;
+    this.lastJobTime = null;
+    this.status = null;
 
     this.everyHour = syncJobDefinitionFromClient.everyHour;
     this.selectionOfDays = syncJobDefinitionFromClient.selectionOfDays;

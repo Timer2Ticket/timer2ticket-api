@@ -23,7 +23,7 @@ export class User {
     user.auth0UserId = auth0UserId;
     user.email = null;
     user.registratedDate = new Date();
-    user.timeZone = ''; // TODO set default timezone
+    user.timeZone = 'Europe/Prague';
     user.notifiactionSettings = new NotificationSettings();
     user.connectionId = 1;
     return user;

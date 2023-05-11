@@ -19,6 +19,7 @@ export class Connection {
   firstService!: SyncedService;
   secondService!: SyncedService;
   isActive!: boolean;
+  deleteTimestamp!: number | null;
 
   constructor(userId: ObjectId, userConnectionId: number, connectionFromClient: ConnectionFromClient) {
     this.userId = userId;
@@ -32,5 +33,6 @@ export class Connection {
 
     // TODO: check if user with his membership has access to this service
     this.isActive = true;
+    this.deleteTimestamp = null;
   }
 }
