@@ -95,7 +95,7 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting user');
   }
 
-  const connections: Connection[] = await databaseService.getConnectionsByUserId(user._id);
+  const connections: Connection[] = await databaseService.getActiveConnectionsByUserId(user._id);
   if (!connections) {
     return res.status(400).send('Error getting connections');
   }
@@ -126,7 +126,7 @@ router.get('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting connection');
   }
 
-  const connection: Connection | null = await databaseService.getConnectionById(objectId);
+  const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
     return res.status(400).send('Error getting connection');
   }
@@ -183,7 +183,7 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
   }
 
   // get current connection
-  const connection: Connection | null = await databaseService.getConnectionById(objectId);
+  const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
     return res.status(400).send('Error getting connection');
   }
@@ -233,7 +233,7 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
   }
 
   // get current connection
-  const connection: Connection | null = await databaseService.getConnectionById(objectId);
+  const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
     return res.status(400).send('Error getting connection');
   }
@@ -244,15 +244,15 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
 
   // update connection
   // update connection activity
-  if("isActive" in req.body) {
-    if(typeof req.body.isActive !== 'boolean') {
+  if ('isActive' in req.body) {
+    if (typeof req.body.isActive !== 'boolean') {
       return res.status(400).send('Incorrect request body: isActive must be boolean');
     }
     connection.isActive = req.body.isActive;
   }
 
   // update connection configSyncJobDefinition
-  if("configSyncJobDefiniton" in req.body) {
+  if ('configSyncJobDefiniton' in req.body) {
     const configSyncJobDefinitionFromClient: SyncJobDefinitionFromClient = new SyncJobDefinitionFromClient(req.body.configSyncJobDefiniton);
     const validationResults = await validate(configSyncJobDefinitionFromClient);
     if (validationResults.length > 0) {
@@ -266,7 +266,7 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
   }
 
   // update connection configSyncJobDefinition
-  if("timeEntrySyncJobDefinition" in req.body) {
+  if ('timeEntrySyncJobDefinition' in req.body) {
     const timeEntrySyncJobDefinitionFromClient: SyncJobDefinitionFromClient = new SyncJobDefinitionFromClient(req.body.timeEntrySyncJobDefinition);
     const validationResults = await validate(timeEntrySyncJobDefinitionFromClient);
     if (validationResults.length > 0) {
@@ -292,8 +292,54 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
 
 /**
  * Delete connection defined by connectionId
+ * Connection is not deleted from database, but only marked as deleted
  */
 router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
+  if (!authCommons.authorizeUser(req)) {
+    return res.sendStatus(401);
+  }
+
+  const auth0UserId = req.params.auth0UserId;
+  const connectionId = req.params.connectionId;
+
+  // get current user
+  const user: User | null = await getUserFromDatabase(auth0UserId);
+  if (!user) {
+    return res.status(400).send('Error getting user');
+  }
+
+  let objectId;
+  try {
+    objectId = new ObjectId(connectionId);
+  } catch (error) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  // get current connection
+  const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
+  if (!connection) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  if (!connection.userId.equals(user._id)) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  // mark to delete
+  connection.deleteTimestamp = Math.floor(Date.now() / 1000);
+  const result = await databaseService.updateConnectionById(connection._id, connection);
+  if (!result) {
+    return res.status(400).send('Error deleting connection');
+  }
+
+  return res.sendStatus(200);
+});
+
+/**
+ * Restore connection marked to delete defined by connectionId
+ * If connection is not marked to delete, 400 is returned
+ */
+router.post('/:connectionId/restore', authCommons.checkJwt, async (req, res) => {
   if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
@@ -324,14 +370,139 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting connection');
   }
 
-  // delete connection
-  const result = await databaseService.deleteConnectionById(connection._id);
+  // unmark to delete
+  connection.deleteTimestamp = null;
+  const result = await databaseService.updateConnectionById(connection._id, connection);
   if (!result) {
     return res.status(400).send('Error deleting connection');
   }
 
   return res.sendStatus(200);
 });
+
+/**
+ * Immidiate syncs config objects
+ */
+router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req, res) => {
+  if (!authCommons.authorizeUser(req)) {
+    return res.sendStatus(401);
+  }
+
+  const auth0UserId = req.params.auth0UserId;
+  const connectionId = req.params.connectionId;
+
+  // get current user
+  const user: User | null = await getUserFromDatabase(auth0UserId);
+  if (!user) {
+    return res.status(400).send('Error getting user');
+  }
+
+  let objectId;
+  try {
+    objectId = new ObjectId(connectionId);
+  } catch (error) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  // get current connection
+  const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
+  if (!connection) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  if (!connection.isActive) {
+    return res.status(400).send('Connection is not active');
+  }
+
+  if (!connection.userId.equals(user._id)) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  if (connection.configSyncJobDefinition.status === 'IN_PROGRESS') {
+    return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
+  }
+
+  // TODO mocked for test purposes
+
+  connection.configSyncJobDefinition.status = 'IN_PROGRESS';
+  await databaseService.updateConnectionById(connection._id, connection);
+
+  res.sendStatus(200);
+  // sleep for 5 seconds
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
+  console.log('syncing config objects finished')
+  const connectionTmp: Connection | null = await databaseService.getActiveConnectionById(objectId);
+  if(!connectionTmp) {
+    return;
+  }
+  connectionTmp.configSyncJobDefinition.status = 'SUCCESS';
+  connectionTmp.configSyncJobDefinition.lastJobTime = Math.floor(Date.now() / 1000);
+  await databaseService.updateConnectionById(connectionTmp._id, connectionTmp);
+});
+
+/**
+ * Immidiate syncs time entries
+ */
+router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, res) => {
+  if (!authCommons.authorizeUser(req)) {
+    return res.sendStatus(401);
+  }
+
+  const auth0UserId = req.params.auth0UserId;
+  const connectionId = req.params.connectionId;
+
+  // get current user
+  const user: User | null = await getUserFromDatabase(auth0UserId);
+  if (!user) {
+    return res.status(400).send('Error getting user');
+  }
+
+  let objectId;
+  try {
+    objectId = new ObjectId(connectionId);
+  } catch (error) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  // get current connection
+  const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
+  if (!connection) {
+    return res.status(400).send('Error getting connection');
+  }
+
+  if (!connection.isActive) {
+    return res.status(400).send('Connection is not active');
+  }
+
+  if (!connection.userId.equals(user._id)) {
+    return res.status(400).send('Error getting connection');
+  }
+
+
+  if (connection.timeEntrySyncJobDefinition.status === 'IN_PROGRESS') {
+    return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
+  }
+  // TODO mocked for test purposes
+
+  connection.timeEntrySyncJobDefinition.status = 'IN_PROGRESS';
+  await databaseService.updateConnectionById(connection._id, connection);
+
+  res.sendStatus(200);
+
+  // sleep for 5 seconds
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
+  console.log('syncTimeEntries finished')
+  const connectionTmp: Connection | null = await databaseService.getActiveConnectionById(objectId);
+  if(!connectionTmp) {
+    return;
+  }
+  connectionTmp.timeEntrySyncJobDefinition.status = 'SUCCESS';
+  connectionTmp.timeEntrySyncJobDefinition.lastJobTime = Math.floor(Date.now() / 1000);
+  await databaseService.updateConnectionById(connectionTmp._id, connectionTmp);
+});
+
 
 /**
  * Returns user from database with auth0UserId in parameter.

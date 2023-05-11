@@ -197,7 +197,19 @@ export class DatabaseService {
   async getConnectionsByUserId(userId: ObjectId): Promise<Connection[]> {
     if (!this._connectionsCollection) return [];
 
-    const filterQuery = { userId: userId };
+    const filterQuery = {
+      userId: userId,
+    };
+    return this._connectionsCollection.find(filterQuery).toArray();
+  }
+
+  async getActiveConnectionsByUserId(userId: ObjectId): Promise<Connection[]> {
+    if (!this._connectionsCollection) return [];
+
+    const filterQuery = {
+      userId: userId,
+      deleteTimestamp: { $eq: null },
+    };
     return this._connectionsCollection.find(filterQuery).toArray();
   }
 
@@ -205,6 +217,17 @@ export class DatabaseService {
     if (!this._connectionsCollection) return null;
 
     const filterQuery = { _id: id };
+
+    return this._connectionsCollection.findOne(filterQuery);
+  }
+
+  async getActiveConnectionById(id: ObjectId): Promise<Connection | null> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = {
+      _id: id,
+      deleteTimestamp: { $eq: null },
+    };
 
     return this._connectionsCollection.findOne(filterQuery);
   }
