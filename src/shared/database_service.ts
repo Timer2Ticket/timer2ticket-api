@@ -94,10 +94,10 @@ export class DatabaseService {
     return this._usersCollection.findOne(filterQuery);
   }
 
-  async createUser(auth0UserId: string): Promise<User | null> {
+  async createUser(auth0UserId: string, userMail: string | null): Promise<User | null> {
     if (!this._usersCollection) return null;
 
-    const result = await this._usersCollection.insertOne(User.default(auth0UserId));
+    const result = await this._usersCollection.insertOne(User.default(auth0UserId, userMail));
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
@@ -107,15 +107,15 @@ export class DatabaseService {
       return null;
     }
     const nextId = user.connectionId++;
-    await this.updateUser(user);
+    await this.updateUser(user._id, user);
 
     return nextId;
   }
 
-  async updateUser(user: User): Promise<User | null> {
+  async updateUser(id: ObjectId, user: User): Promise<User | null> {
     if (!this._usersCollection) return null;
 
-    const filterQuery = { _id: user._id };
+    const filterQuery = { _id: id };
     const result = await this._usersCollection.replaceOne(filterQuery, user);
     return result.result.ok === 1 ? user : null;
   }

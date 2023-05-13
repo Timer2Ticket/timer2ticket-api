@@ -332,7 +332,7 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error deleting connection');
   }
 
-  return res.sendStatus(200);
+  return res.sendStatus(204);
 });
 
 /**
@@ -374,10 +374,10 @@ router.post('/:connectionId/restore', authCommons.checkJwt, async (req, res) => 
   connection.deleteTimestamp = null;
   const result = await databaseService.updateConnectionById(connection._id, connection);
   if (!result) {
-    return res.status(400).send('Error deleting connection');
+    return res.status(400).send('Error restoring connection');
   }
 
-  return res.sendStatus(200);
+  return res.sendStatus(204);
 });
 
 /**
@@ -427,7 +427,7 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
   connection.configSyncJobDefinition.status = 'IN_PROGRESS';
   await databaseService.updateConnectionById(connection._id, connection);
 
-  res.sendStatus(200);
+  res.sendStatus(204);
   // sleep for 5 seconds
   await new Promise(resolve => setTimeout(resolve, 5000));
 
@@ -488,7 +488,7 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   connection.timeEntrySyncJobDefinition.status = 'IN_PROGRESS';
   await databaseService.updateConnectionById(connection._id, connection);
 
-  res.sendStatus(200);
+  res.sendStatus(204);
 
   // sleep for 5 seconds
   await new Promise(resolve => setTimeout(resolve, 5000));

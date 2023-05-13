@@ -23,6 +23,7 @@
     "@types/nodemailer": "^6.4.4",
     "@types/superagent": "^4.1.10",
     "anyid": "^1.0.7",
+    "auth0": "^3.4.0",
     "bcrypt": "^5.0.1",
     "chai": "^4.3.4",
     "class-transformer": "^0.5.1",

@@ -18,10 +18,10 @@ export class User {
   // Connection user id
   connectionId!: number;
 
-  static default(auth0UserId: string): User {
+  static default(auth0UserId: string, userMail: string | null): User {
     const user = new User();
     user.auth0UserId = auth0UserId;
-    user.email = null;
+    user.email = userMail;
     user.registratedDate = new Date();
     user.timeZone = 'Europe/Prague';
     user.notifiactionSettings = new NotificationSettings();

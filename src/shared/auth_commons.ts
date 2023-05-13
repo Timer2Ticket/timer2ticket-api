@@ -1,5 +1,6 @@
 import { auth } from 'express-oauth2-jwt-bearer';
 import { Constants } from './constants';
+import superagent from 'superagent';
 
 export class AuthCommons {
   private static _instance: AuthCommons;
@@ -14,6 +15,20 @@ export class AuthCommons {
     audience: Constants.authAudience,
     issuerBaseURL: Constants.authDomain,
   });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async geUserInfo(accessToken: string): Promise<superagent.Response> {
+    let response;
+    try {
+      response = await superagent
+        .get(`${Constants.authDomain}userinfo`)
+        .set('Authorization', `Bearer ${accessToken}`);
+    } catch (err) {
+      console.log(err)
+      return err.status;
+    }
+    return response;
+  }
 
 
   // eslint-disable-next-line

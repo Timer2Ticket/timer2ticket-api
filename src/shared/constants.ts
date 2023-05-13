@@ -21,4 +21,7 @@ export class Constants {
 
   static authAudience = process.env.AUTH0_AUDIENCE;
   static authDomain = process.env.AUTH0_DOMAIN;
+  static authManagementDomain = process.env.AUTH0_MANAGEMENT_DOMAIN;
+  static authManagementClientId = process.env.AUTH0_MANAGEMENT_CLIENT_ID;
+  static authManagementClientSecret = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET;
 }
