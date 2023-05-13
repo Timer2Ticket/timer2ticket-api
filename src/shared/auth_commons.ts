@@ -24,7 +24,6 @@ export class AuthCommons {
         .get(`${Constants.authDomain}userinfo`)
         .set('Authorization', `Bearer ${accessToken}`);
     } catch (err) {
-      console.log(err)
       return err.status;
     }
     return response;

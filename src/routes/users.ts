@@ -101,7 +101,6 @@ router.patch('/', authCommons.checkJwt, async (req, res) => {
   }
 
   const fromClient: PatchUserFromClient = new PatchUserFromClient(req.body);
-  console.log('fromClient: ' + JSON.stringify(fromClient));
   const validationResults = await validate(fromClient);
   if (validationResults.length > 0) {
     return res.status(400).send('Incorrect request body: ' + JSON.stringify(validationResults));
@@ -160,7 +159,6 @@ router.post('/changePassword', authCommons.checkJwt, async (req, res) => {
   try{
     response = await management.createPasswordChangeTicket(data);
   } catch (ex) {
-    console.log("ex: " + ex);
     return res.status(503).send('Error while creating password change ticket');
   }
 
