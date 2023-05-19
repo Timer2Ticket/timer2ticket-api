@@ -67,29 +67,29 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
 /**
  * Delete user with auth0UserId in parameter.
  */
-router.delete('/', authCommons.checkJwt, async (req, res) => {
-  if (!authCommons.authorizeUser(req)) {
-    return res.sendStatus(401);
-  }
-
-  const management = getManagementClient();
-
-  let isSuccessful = true;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await management.deleteUser({ id: req.params.auth0UserId }, function(err: any, response: any) {
-    if (err) {
-      isSuccessful = false;
-    }
-  });
-
-  if (!isSuccessful) {
-    return res.status(503).send('Error while deleting user');
-  }
-
-  // TODO: delete user from database
-
-  res.sendStatus(204);
-});
+// router.delete('/', authCommons.checkJwt, async (req, res) => {
+//   if (!authCommons.authorizeUser(req)) {
+//     return res.sendStatus(401);
+//   }
+//
+//   const management = getManagementClient();
+//
+//   let isSuccessful = true;
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   await management.deleteUser({ id: req.params.auth0UserId }, function(err: any, response: any) {
+//     if (err) {
+//       isSuccessful = false;
+//     }
+//   });
+//
+//   if (!isSuccessful) {
+//     return res.status(503).send('Error while deleting user');
+//   }
+//
+//   // TODO: delete user from database
+//
+//   res.sendStatus(204);
+// });
 
 /**
  * Update user with auth0UserId in parameter.
