@@ -1,4 +1,5 @@
-import { IsBoolean, IsEmail, IsOptional } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional } from 'class-validator';
+import { timeZones } from './time_zones';
 
 export class PatchUserFromClient {
   @IsBoolean()
@@ -6,6 +7,7 @@ export class PatchUserFromClient {
   syncProblemsInfo!: boolean | null;
 
   @IsOptional()
+  @IsIn(timeZones)
   timeZone!: string | null;
 
   @IsEmail()

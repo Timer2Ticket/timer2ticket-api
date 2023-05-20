@@ -49,6 +49,8 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
   const errors: string[] = [];
   const validateConnection = await connectionFromClient.validateConnectionTools(errors);
 
+  // TODO validate if user can make this sync config
+
   if (!validateConnection) {
     return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
   }
@@ -69,7 +71,14 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting user');
   }
 
-  const connection: Connection = new Connection(user._id, nextId, connectionFromClient);
+  let isActive = true;
+
+  const removeActiveConnectionResult = await databaseService.addActiveConnection(user._id);
+  if (!removeActiveConnectionResult) {
+    isActive = false;
+  }
+
+  const connection: Connection = new Connection(user._id, nextId, connectionFromClient, isActive);
 
   const result = await databaseService.createConnection(connection);
 
@@ -193,7 +202,7 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
   }
 
   // update connection
-  const newConnection: Connection = new Connection(connection.userId, connection.userConnectionId, connectionFromClient);
+  const newConnection: Connection = new Connection(connection.userId, connection.userConnectionId, connectionFromClient, connection.isActive);
 
   // save connection
   const result = await databaseService.updateConnectionById(connection._id, newConnection);
@@ -244,9 +253,21 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
 
   // update connection
   // update connection activity
-  if ('isActive' in req.body) {
+  if ('isActive' in req.body && req.body.isActive !== connection.isActive) {
     if (typeof req.body.isActive !== 'boolean') {
       return res.status(400).send('Incorrect request body: isActive must be boolean');
+    }
+
+    if (req.body.isActive) {
+      const addActiveConnectionResult = await databaseService.addActiveConnection(user._id);
+      if (!addActiveConnectionResult) {
+        return res.status(400).send('You have reached the maximum number of active connections');
+      }
+    } else {
+      const removeActiveConnectionResult = await databaseService.removeActiveConnection(user._id);
+      if (!removeActiveConnectionResult) {
+        return res.status(500).send('Error removing active connection');
+      }
     }
     connection.isActive = req.body.isActive;
   }
@@ -422,6 +443,11 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
     return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
   }
 
+  const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
+  if (!useImmediateSyncResult) {
+    return res.status(400).send('User has not enough immediate syncs left.');
+  }
+
   // TODO mocked for test purposes
 
   connection.configSyncJobDefinition.status = 'IN_PROGRESS';
@@ -431,9 +457,9 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
   // sleep for 5 seconds
   await new Promise(resolve => setTimeout(resolve, 5000));
 
-  console.log('syncing config objects finished')
+  console.log('syncing config objects finished');
   const connectionTmp: Connection | null = await databaseService.getActiveConnectionById(objectId);
-  if(!connectionTmp) {
+  if (!connectionTmp) {
     return;
   }
   connectionTmp.configSyncJobDefinition.status = 'SUCCESS';
@@ -483,6 +509,12 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   if (connection.timeEntrySyncJobDefinition.status === 'IN_PROGRESS') {
     return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
   }
+
+  const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
+  if (!useImmediateSyncResult) {
+    return res.status(400).send('User has not enough immediate syncs left.');
+  }
+
   // TODO mocked for test purposes
 
   connection.timeEntrySyncJobDefinition.status = 'IN_PROGRESS';
@@ -493,9 +525,9 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   // sleep for 5 seconds
   await new Promise(resolve => setTimeout(resolve, 5000));
 
-  console.log('syncTimeEntries finished')
+  console.log('syncTimeEntries finished');
   const connectionTmp: Connection | null = await databaseService.getActiveConnectionById(objectId);
-  if(!connectionTmp) {
+  if (!connectionTmp) {
     return;
   }
   connectionTmp.timeEntrySyncJobDefinition.status = 'SUCCESS';

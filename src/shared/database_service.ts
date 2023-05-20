@@ -2,14 +2,12 @@ import { Constants } from './constants';
 import { Collection, Db, MongoClient, ObjectId } from 'mongodb';
 import { User } from '../models/user/user';
 import { JobLog } from '../models/jobLog';
-import { Membership } from '../models/commrecial/membership/membership';
-import { MembershipInfo } from '../models/commrecial/membership/membership_info';
+import { MembershipInfo } from '../models/commrecial/membership_info';
 import { Connection } from '../models/connection/connection';
 
 export class DatabaseService {
-  private static _mongoDbName = process.env.DB_NAME || 'timer2ticketDB_new';
+  private static _mongoDbName = Constants.dbName || 'timer2ticketDB_new';
   private static _usersCollectionName = 'users';
-  private static _membershipCollectionName = 'membership';
   private static _membershipInfoCollectionName = 'membershipInfo';
   private static _connectionsCollectionName = 'connections';
   private static _jobLogsCollectionName = 'jobLogs';
@@ -20,7 +18,6 @@ export class DatabaseService {
   private _db: Db | undefined;
 
   private _usersCollection: Collection<User> | undefined;
-  private _membershipCollection: Collection<Membership> | undefined;
   private _membershipInfoCollection: Collection<MembershipInfo> | undefined;
   private _connectionsCollection: Collection<Connection> | undefined;
   private _jobLogsCollection: Collection<JobLog> | undefined;
@@ -56,7 +53,6 @@ export class DatabaseService {
     this._db = this._mongoClient.db(DatabaseService._mongoDbName);
 
     this._usersCollection = this._db.collection(DatabaseService._usersCollectionName);
-    this._membershipCollection = this._db.collection(DatabaseService._membershipCollectionName);
     this._membershipInfoCollection = this._db.collection(DatabaseService._membershipInfoCollectionName);
     this._connectionsCollection = this._db.collection(DatabaseService._connectionsCollectionName);
 
@@ -165,22 +161,31 @@ export class DatabaseService {
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
-  // ***********************************************************
-  // MEMBERSHIP ************************************************
-  // ***********************************************************
+  async useImmediateSync(userId: ObjectId): Promise<boolean | null> {
+    if (!this._membershipInfoCollection) return null;
 
-  async getMembershipById(id: ObjectId): Promise<Membership | null> {
-    if (!this._membershipCollection) return null;
+    const filterQuery = { userId: userId, currentImmediateSyncs: { $gt: 0 } };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: -1 } });
 
-    const filterQuery = { _id: id };
-    return this._membershipCollection.findOne(filterQuery);
+    return result.value !== null;
   }
 
-  async getActiveMembershipByName(name: string): Promise<Membership | null> {
-    if (!this._membershipCollection) return null;
+  async addActiveConnection(userId: ObjectId): Promise<boolean | null> {
+    if (!this._membershipInfoCollection) return null;
 
-    const filterQuery = { name: name, status: 'Active' };
-    return this._membershipCollection.findOne(filterQuery);
+    const filterQuery = { userId: userId, $expr: { $lt: ['$currentActiveConnections', '$currentConnections'] } };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: 1 } });
+
+    return result.value !== null;
+  }
+
+  async removeActiveConnection(userId: ObjectId): Promise<boolean | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId};
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: -1 } });
+
+    return result.value !== null;
   }
 
   // ***********************************************************

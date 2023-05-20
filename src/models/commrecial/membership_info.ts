@@ -1,5 +1,4 @@
 import { ObjectId } from 'mongodb';
-import { BillingInformation } from './billing_information';
 
 export class MembershipInfo {
   // Mongo
@@ -8,21 +7,29 @@ export class MembershipInfo {
   // UserId
   userId!: ObjectId;
 
-  // Parameters
-  currentMembership!: ObjectId | null;
+  // Stripe
+  stripeCustomerId!: string | null;
+  stripeSubscriptionId!: string | null;
+
+  // currentMembership: HOBBY, JUNIOR, SENIOR
+  currentMembership!: string | null;
   currentMembershipFinishes!: Date | null;
-  currentConnectionsOver!: number;
+  currentConnections!: number;
+  currentActiveConnections!: number;
   currentImmediateSyncs!: number;
-  billingInformation!: BillingInformation;
 
   static default(userId: ObjectId): MembershipInfo {
     const membershipInfo = new MembershipInfo();
     membershipInfo.userId = userId;
+
+    membershipInfo.stripeCustomerId = null;
+    membershipInfo.stripeSubscriptionId = null;
+
     membershipInfo.currentMembership = null;
     membershipInfo.currentMembershipFinishes = null;
-    membershipInfo.currentConnectionsOver = 0;
+    membershipInfo.currentConnections = 0;
+    membershipInfo.currentActiveConnections = 0;
     membershipInfo.currentImmediateSyncs = 0;
-    membershipInfo.billingInformation = BillingInformation.default();
     return membershipInfo;
 
   }
