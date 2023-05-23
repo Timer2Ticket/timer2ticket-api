@@ -4,7 +4,6 @@ import { Constants } from '../shared/constants';
 import { authCommons } from '../shared/auth_commons';
 import { validate } from 'class-validator';
 import { PatchUserFromClient } from '../models/user/from_client/patch_user_from_client';
-import { timeZones } from '../models/user/from_client/time_zones';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ManagementClient = require('auth0').ManagementClient;
@@ -46,14 +45,14 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const userInfo = await authCommons.geUserInfo(req.auth.token);
-    if (!userInfo || typeof userInfo === 'number') {
+    if (!userInfo) {
       return res.sendStatus(503);
     }
 
     // create new user
     const newUser = await databaseService.createUser(auth0UserId, userInfo.body.email);
 
-    if (Constants.IS_COMMERCIAL_VERSION && newUser && newUser._id) {
+    if (Constants.isCommercialVersion && newUser && newUser._id) {
       // create new membershipInfo
       await databaseService.createMembershipInfo(newUser._id);
     }
@@ -123,9 +122,6 @@ router.patch('/', authCommons.checkJwt, async (req, res) => {
     user.notifiactionSettings.syncProblemsInfo = fromClient.syncProblemsInfo;
   }
   if ('timeZone' in req.body && fromClient.timeZone) {
-    if (!timeZones.includes(fromClient.timeZone)) {
-      return res.status(400).send('Incorrect time zone');
-    }
     user.timeZone = fromClient.timeZone;
   }
 

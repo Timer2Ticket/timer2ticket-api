@@ -7,6 +7,7 @@ import { User } from '../models/user/user';
 import { authCommons } from '../shared/auth_commons';
 import { ObjectId } from 'mongodb';
 import { SyncJobDefinitionFromClient } from '../models/connection/from_client/sync_job_definition_from_client';
+import { Constants } from '../shared/constants';
 
 const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
@@ -73,9 +74,11 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
 
   let isActive = true;
 
-  const removeActiveConnectionResult = await databaseService.addActiveConnection(user._id);
-  if (!removeActiveConnectionResult) {
-    isActive = false;
+  if(Constants.isCommercialVersion) {
+    const removeActiveConnectionResult = await databaseService.addActiveConnection(user._id);
+    if (!removeActiveConnectionResult) {
+      isActive = false;
+    }
   }
 
   const connection: Connection = new Connection(user._id, nextId, connectionFromClient, isActive);
@@ -258,15 +261,17 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
       return res.status(400).send('Incorrect request body: isActive must be boolean');
     }
 
-    if (req.body.isActive) {
-      const addActiveConnectionResult = await databaseService.addActiveConnection(user._id);
-      if (!addActiveConnectionResult) {
-        return res.status(400).send('You have reached the maximum number of active connections');
-      }
-    } else {
-      const removeActiveConnectionResult = await databaseService.removeActiveConnection(user._id);
-      if (!removeActiveConnectionResult) {
-        return res.status(500).send('Error removing active connection');
+    if(Constants.isCommercialVersion) {
+      if (req.body.isActive) {
+        const addActiveConnectionResult = await databaseService.addActiveConnection(user._id);
+        if (!addActiveConnectionResult) {
+          return res.status(400).send('You have reached the maximum number of active connections');
+        }
+      } else {
+        const removeActiveConnectionResult = await databaseService.removeActiveConnection(user._id);
+        if (!removeActiveConnectionResult) {
+          return res.status(500).send('Error removing active connection');
+        }
       }
     }
     connection.isActive = req.body.isActive;
@@ -346,8 +351,16 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting connection');
   }
 
+  if(Constants.isCommercialVersion && connection.isActive) {
+    const removeActiveConnectionResult = await databaseService.removeActiveConnection(user._id);
+    if (!removeActiveConnectionResult) {
+      return res.status(500).send('Error removing active connection');
+    }
+  }
+
   // mark to delete
   connection.deleteTimestamp = Math.floor(Date.now() / 1000);
+  connection.isActive = false;
   const result = await databaseService.updateConnectionById(connection._id, connection);
   if (!result) {
     return res.status(400).send('Error deleting connection');
@@ -443,9 +456,11 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
     return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
   }
 
-  const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
-  if (!useImmediateSyncResult) {
-    return res.status(400).send('User has not enough immediate syncs left.');
+  if(Constants.isCommercialVersion) {
+    const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
+    if (!useImmediateSyncResult) {
+      return res.status(400).send('User has not enough immediate syncs left.');
+    }
   }
 
   // TODO mocked for test purposes
@@ -510,9 +525,11 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
     return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
   }
 
-  const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
-  if (!useImmediateSyncResult) {
-    return res.status(400).send('User has not enough immediate syncs left.');
+  if(Constants.isCommercialVersion) {
+    const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
+    if (!useImmediateSyncResult) {
+      return res.status(400).send('User has not enough immediate syncs left.');
+    }
   }
 
   // TODO mocked for test purposes
