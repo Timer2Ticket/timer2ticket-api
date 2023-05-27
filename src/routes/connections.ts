@@ -13,6 +13,12 @@ const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let t2tLib: any;
+if (Constants.isCommercialVersion) {
+  t2tLib = require('timer2ticket-backend-library');
+}
+
 // middleware that is specific to this router
 router.use((req, res, next) => {
   console.log(`Connections router calls at time: ${Date.now()}`);
@@ -40,6 +46,11 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Incorrect request body');
   }
 
+  const user: User | null = await getUserFromDatabase(auth0UserId);
+  if (!user) {
+    return res.status(500).send('Error getting user');
+  }
+
   // validate connection from client object
   const validationResults = await validate(connectionFromClient);
 
@@ -48,22 +59,24 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
   }
 
   const errors: string[] = [];
-  const validateConnection = await connectionFromClient.validateConnectionTools(errors);
+  await connectionFromClient.validateConnectionTools(errors);
+  if (Constants.isCommercialVersion) {
+    const membershipInfo = await databaseService.getMembershipInfoByUserId(user._id);
+    if (!membershipInfo) {
+      return res.sendStatus(500);
+    }
 
-  // TODO validate if user can make this sync config
+    t2tLib.ValidateMembership.validateSyncJobDefinition(membershipInfo.currentMembership, connectionFromClient.configSyncJobDefinition, errors);
+    t2tLib.ValidateMembership.validateSyncJobDefinition(membershipInfo.currentMembership, connectionFromClient.timeEntrySyncJobDefinition, errors);
+  }
 
-  if (!validateConnection) {
+  if (errors.length > 0) {
     return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
   }
 
   // get next connection id
   const jwtToken = req.header('authorization');
   if (!jwtToken) {
-    return res.status(400).send('Error getting user');
-  }
-
-  const user: User | null = await getUserFromDatabase(auth0UserId);
-  if (!user) {
     return res.status(400).send('Error getting user');
   }
 
@@ -74,7 +87,7 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
 
   let isActive = true;
 
-  if(Constants.isCommercialVersion) {
+  if (Constants.isCommercialVersion) {
     const removeActiveConnectionResult = await databaseService.addActiveConnection(user._id);
     if (!removeActiveConnectionResult) {
       isActive = false;
@@ -161,6 +174,12 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
   const auth0UserId = req.params.auth0UserId;
   const connectionId = req.params.connectionId;
 
+  // get current user
+  const user: User | null = await getUserFromDatabase(auth0UserId);
+  if (!user) {
+    return res.status(400).send('Error getting user');
+  }
+
   // validate connection
   const connectionFromClient: ConnectionFromClient = new ConnectionFromClient(req.body);
   if (!connectionFromClient) {
@@ -175,16 +194,19 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
   }
 
   const errors: string[] = [];
-  const validateConnection = await connectionFromClient.validateConnectionTools(errors);
+  await connectionFromClient.validateConnectionTools(errors);
+  if (Constants.isCommercialVersion) {
+    const membershipInfo = await databaseService.getMembershipInfoByUserId(user._id);
+    if (!membershipInfo) {
+      return res.sendStatus(500);
+    }
 
-  if (!validateConnection) {
-    return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
+    t2tLib.ValidateMembership.validateSyncJobDefinition(membershipInfo.currentMembership, connectionFromClient.configSyncJobDefinition, errors);
+    t2tLib.ValidateMembership.validateSyncJobDefinition(membershipInfo.currentMembership, connectionFromClient.timeEntrySyncJobDefinition, errors);
   }
 
-  // get current user
-  const user: User | null = await getUserFromDatabase(auth0UserId);
-  if (!user) {
-    return res.status(400).send('Error getting user');
+  if (errors.length > 0) {
+    return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
   }
 
   let objectId;
@@ -261,7 +283,7 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
       return res.status(400).send('Incorrect request body: isActive must be boolean');
     }
 
-    if(Constants.isCommercialVersion) {
+    if (Constants.isCommercialVersion) {
       if (req.body.isActive) {
         const addActiveConnectionResult = await databaseService.addActiveConnection(user._id);
         if (!addActiveConnectionResult) {
@@ -285,6 +307,20 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
       return res.status(400).send('Incorrect request body: ' + JSON.stringify(validationResults));
     }
 
+    if (Constants.isCommercialVersion) {
+      const membershipInfo = await databaseService.getMembershipInfoByUserId(user._id);
+      if (!membershipInfo) {
+        return res.sendStatus(500);
+      }
+
+      const errors: string[] = [];
+      t2tLib.ValidateMembership.validateSyncJobDefinition(membershipInfo.currentMembership, configSyncJobDefinitionFromClient, errors);
+
+      if (errors.length > 0) {
+        return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
+      }
+    }
+
     connection.configSyncJobDefinition.schedule = configSyncJobDefinitionFromClient.getCronString();
     connection.configSyncJobDefinition.everyHour = configSyncJobDefinitionFromClient.everyHour;
     connection.configSyncJobDefinition.selectionOfDays = configSyncJobDefinitionFromClient.selectionOfDays;
@@ -298,6 +334,21 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
     if (validationResults.length > 0) {
       return res.status(400).send('Incorrect request body: ' + JSON.stringify(validationResults));
     }
+
+    if (Constants.isCommercialVersion) {
+      const membershipInfo = await databaseService.getMembershipInfoByUserId(user._id);
+      if (!membershipInfo) {
+        return res.sendStatus(500);
+      }
+
+      const errors: string[] = [];
+      t2tLib.ValidateMembership.validateSyncJobDefinition(membershipInfo.currentMembership, timeEntrySyncJobDefinitionFromClient, errors);
+
+      if (errors.length > 0) {
+        return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
+      }
+    }
+
 
     connection.timeEntrySyncJobDefinition.schedule = timeEntrySyncJobDefinitionFromClient.getCronString();
     connection.timeEntrySyncJobDefinition.everyHour = timeEntrySyncJobDefinitionFromClient.everyHour;
@@ -351,7 +402,7 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error getting connection');
   }
 
-  if(Constants.isCommercialVersion && connection.isActive) {
+  if (Constants.isCommercialVersion && connection.isActive) {
     const removeActiveConnectionResult = await databaseService.removeActiveConnection(user._id);
     if (!removeActiveConnectionResult) {
       return res.status(500).send('Error removing active connection');
@@ -456,7 +507,7 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
     return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
   }
 
-  if(Constants.isCommercialVersion) {
+  if (Constants.isCommercialVersion) {
     const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
     if (!useImmediateSyncResult) {
       return res.status(400).send('User has not enough immediate syncs left.');
@@ -525,7 +576,7 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
     return res.status(400).send('Synchronization of config objects is in progress. Please wait until it is finished.');
   }
 
-  if(Constants.isCommercialVersion) {
+  if (Constants.isCommercialVersion) {
     const useImmediateSyncResult = await databaseService.useImmediateSync(user._id);
     if (!useImmediateSyncResult) {
       return res.status(400).send('User has not enough immediate syncs left.');
