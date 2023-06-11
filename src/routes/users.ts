@@ -85,8 +85,6 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
 //     return res.status(503).send('Error while deleting user');
 //   }
 //
-//   // TODO: delete user from database
-//
 //   res.sendStatus(204);
 // });
 

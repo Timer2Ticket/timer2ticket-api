@@ -45,12 +45,6 @@ export class ConnectionFromClient {
     return result;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private validateMembershipSyncJobDefinition(errors: string[]): boolean {
-    // TODO: Implement
-    return true;
-  }
-
   private async validateFirstTool(errors: string[]): Promise<boolean> {
     return await this.validateTool(this.firstTool, 'First tool', errors);
   }
