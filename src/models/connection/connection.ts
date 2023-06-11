@@ -31,8 +31,11 @@ export class Connection {
     this.firstService = new SyncedService(connectionFromClient.firstTool);
     this.secondService = new SyncedService(connectionFromClient.secondTool);
 
-    // TODO: check if user with his membership has access to this service
     this.isActive = isActive;
     this.deleteTimestamp = null;
+  }
+
+  static getConnectionBetweenString(connection: Connection): string {
+    return `${SyncedService.getSyncServiceName(connection.firstService)} - ${SyncedService.getSyncServiceName(connection.secondService)}`;
   }
 }

@@ -147,7 +147,7 @@ router.post('/changePassword', authCommons.checkJwt, async (req, res) => {
 
   const management = getManagementClient();
   const data = {
-    result_url: 'http://localhost:8081/profile/settings',
+    result_url: `${req.get('origin')}/profile/settings`,
     user_id: req.params.auth0UserId,
   };
 

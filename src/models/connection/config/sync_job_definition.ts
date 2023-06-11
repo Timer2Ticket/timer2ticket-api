@@ -1,6 +1,7 @@
 import { SyncJobDefinitionFromClient } from '../from_client/sync_job_definition_from_client';
 
 export class SyncJobDefinition {
+  // cron format: https://github.com/kelektiv/node-cron
   schedule!: string;
   lastJobTime!: number | null;
   // lastJobStatus: 'SUCCESS' | 'ERROR' | 'IN_PROGRESS' | null;

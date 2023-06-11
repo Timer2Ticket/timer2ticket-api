@@ -29,7 +29,7 @@ export class AuthCommons {
     return response;
   }
 
-
+  // Check whether user is authorized to get user's data which is requested
   // eslint-disable-next-line
   authorizeUser(req: any): boolean {
     const auth0UserId = req.params.auth0UserId;

@@ -1,16 +1,19 @@
 import { Constants } from './constants';
 import { Collection, Db, MongoClient, ObjectId } from 'mongodb';
 import { User } from '../models/user/user';
-import { JobLog } from '../models/jobLog';
+import { JobLog } from '../models/job_log';
 import { MembershipInfo } from '../models/commrecial/membership_info';
 import { Connection } from '../models/connection/connection';
+import { ImmediateSyncLog } from '../models/commrecial/immediate_sync_log';
 
 export class DatabaseService {
   private static _mongoDbName = Constants.dbName || 'timer2ticketDB_new';
   private static _usersCollectionName = 'users';
-  private static _membershipInfoCollectionName = 'membershipInfo';
   private static _connectionsCollectionName = 'connections';
   private static _jobLogsCollectionName = 'jobLogs';
+  // for commercial version
+  private static _membershipInfoCollectionName = 'membershipInfo';
+  private static _immediateSyncLogsCollectionName = 'immediateSyncLogs';
 
   private static _instance: DatabaseService;
 
@@ -21,6 +24,7 @@ export class DatabaseService {
   private _membershipInfoCollection: Collection<MembershipInfo> | undefined;
   private _connectionsCollection: Collection<Connection> | undefined;
   private _jobLogsCollection: Collection<JobLog> | undefined;
+  private _immediateSyncLogsCollection: Collection<ImmediateSyncLog> | undefined;
 
   private _initCalled = false;
 
@@ -53,11 +57,13 @@ export class DatabaseService {
     this._db = this._mongoClient.db(DatabaseService._mongoDbName);
 
     this._usersCollection = this._db.collection(DatabaseService._usersCollectionName);
-    this._membershipInfoCollection = this._db.collection(DatabaseService._membershipInfoCollectionName);
     this._connectionsCollection = this._db.collection(DatabaseService._connectionsCollectionName);
-
     this._jobLogsCollection = this._db.collection(DatabaseService._jobLogsCollectionName);
 
+    if (Constants.isCommercialVersion) {
+      this._membershipInfoCollection = this._db.collection(DatabaseService._membershipInfoCollectionName);
+      this._immediateSyncLogsCollection = this._db.collection(DatabaseService._immediateSyncLogsCollectionName);
+    }
     return true;
   }
 
@@ -69,6 +75,10 @@ export class DatabaseService {
   // USERS *****************************************************
   // ***********************************************************
 
+  /**
+   * Get user by user id
+   * @param userId
+   */
   async getUserById(userId: string): Promise<User | null> {
     if (!this._usersCollection) return null;
 
@@ -83,6 +93,10 @@ export class DatabaseService {
     return this._usersCollection.findOne(filterQuery);
   }
 
+  /**
+   * Get user by auth0 user id
+   * @param auth0UserId
+   */
   async getUserByAuth0UserId(auth0UserId: string): Promise<User | null> {
     if (!this._usersCollection) return null;
 
@@ -90,6 +104,11 @@ export class DatabaseService {
     return this._usersCollection.findOne(filterQuery);
   }
 
+  /**
+   * Create user
+   * @param auth0UserId
+   * @param userMail
+   */
   async createUser(auth0UserId: string, userMail: string | null): Promise<User | null> {
     if (!this._usersCollection) return null;
 
@@ -97,17 +116,28 @@ export class DatabaseService {
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
+  /**
+   * Get next id of connection for user defined by auth0 user id
+   * @param auth0UserId
+   */
   async getNextConnectionId(auth0UserId: string): Promise<number | null> {
-    const user = await this.getUserByAuth0UserId(auth0UserId);
-    if (!user) {
+    if (!this._usersCollection) return null;
+
+    const filterQuery = { auth0UserId: auth0UserId };
+    const result = await this._usersCollection.findOneAndUpdate(filterQuery, { $inc: { connectionId: 1 } });
+
+    if (!result.value) {
       return null;
     }
-    const nextId = user.connectionId++;
-    await this.updateUser(user._id, user);
 
-    return nextId;
+    return result.value.connectionId;
   }
 
+  /**
+   * Update user
+   * @param id
+   * @param user
+   */
   async updateUser(id: ObjectId, user: User): Promise<User | null> {
     if (!this._usersCollection) return null;
 
@@ -120,24 +150,59 @@ export class DatabaseService {
   // JOB LOGS **************************************************
   // ***********************************************************
 
-  // async getJobLogsByUserId(userId: string): Promise<JobLog[]> {
-  //   if (!this._jobLogsCollection) return [];
-  //
-  //   const filterQuery = { userId: new ObjectId(userId) };
-  //   // sort by date desc, limit to only 100
-  //   const sortQuery = { scheduledDate: -1 };
-  //   return this._jobLogsCollection
-  //     .find(filterQuery)
-  //     .sort(sortQuery)
-  //     .limit(100)
-  //     .toArray();
-  // }
+  async getJobLogsByUserId(userId: ObjectId): Promise<JobLog[]> {
+    if (!this._jobLogsCollection) return [];
+
+    const filterQuery = { userId: userId };
+    // sort by date desc, limit to only 100
+    const sortQuery = { scheduledDate: -1 };
+    return this._jobLogsCollection
+      .find(filterQuery)
+      .sort(sortQuery)
+      .limit(100)
+      .toArray();
+  }
+
+  async createJobLog(user: User, connection: Connection, type: string, scheduledDate: number): Promise<JobLog | null> {
+    if (!this._jobLogsCollection) return null;
+
+    const result = await this._jobLogsCollection.insertOne(JobLog.default(user, connection, type, scheduledDate));
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
+
+  // ***********************************************************
+  // IMMEDIATE SYNC LOGS ***************************************
+  // ***********************************************************
+
+  async getImmediateSyncLogsByUserId(userId: ObjectId): Promise<ImmediateSyncLog[]> {
+    if (!this._immediateSyncLogsCollection) return [];
+
+    const filterQuery = { userId: userId };
+    // sort by date desc, limit to only 100
+    const sortQuery = { date: -1 };
+    return this._immediateSyncLogsCollection
+      .find(filterQuery)
+      .sort(sortQuery)
+      .limit(100)
+      .toArray();
+  }
+
+  async createImmediateSyncLog(userId: ObjectId, newBalance: number, change: number, date: number, type: string, job: ObjectId | null, description: string): Promise<ImmediateSyncLog | null> {
+    if (!this._immediateSyncLogsCollection) return null;
+
+    const result = await this._immediateSyncLogsCollection.insertOne(ImmediateSyncLog.default(userId, newBalance, change, date, type, job, description));
+    return result.result.ok === 1 ? result.ops[0] : null;
+  }
 
 
   // ***********************************************************
   // MEMBERSHIP INFO *******************************************
   // ***********************************************************
 
+  /**
+   * Create membership info for user defined by user id
+   * @param userId
+   */
   async createMembershipInfo(userId: ObjectId): Promise<MembershipInfo | null> {
     if (!this._membershipInfoCollection) return null;
 
@@ -145,6 +210,10 @@ export class DatabaseService {
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
+  /**
+   * Get membership info for user defined by user id
+   * @param userId
+   */
   async getMembershipInfoByUserId(userId: ObjectId): Promise<MembershipInfo | null> {
     if (!this._membershipInfoCollection) return null;
 
@@ -152,20 +221,31 @@ export class DatabaseService {
     return this._membershipInfoCollection.findOne(filterQuery);
   }
 
-  async updateMembershipInfo(userId: ObjectId, newMembershipInfo: MembershipInfo): Promise<MembershipInfo | null> {
-    if (!this._membershipInfoCollection) return null;
-
-    const filterQuery = { userId: userId };
-
-    const result = await this._membershipInfoCollection.replaceOne(filterQuery, newMembershipInfo);
-    return result.result.ok === 1 ? result.ops[0] : null;
-  }
-
-  async useImmediateSync(userId: ObjectId): Promise<boolean | null> {
+  /**
+   * Use immediate sync for user defined by user id
+   * findOneAndUpdate atomic
+   * @param userId
+   */
+  async useImmediateSync(userId: ObjectId): Promise<MembershipInfo | null | undefined> {
     if (!this._membershipInfoCollection) return null;
 
     const filterQuery = { userId: userId, currentImmediateSyncs: { $gt: 0 } };
     const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: -1 } });
+
+    return result.value;
+  }
+
+  /**
+   * Add change number of immediate syncs for user defined by user id
+   * findOneAndUpdate atomic
+   * @param userId
+   * @param change
+   */
+  async addImmediateSync(userId: ObjectId, change: number): Promise<boolean | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: change } });
 
     return result.value !== null;
   }
@@ -182,7 +262,7 @@ export class DatabaseService {
   async removeActiveConnection(userId: ObjectId): Promise<boolean | null> {
     if (!this._membershipInfoCollection) return null;
 
-    const filterQuery = { userId: userId};
+    const filterQuery = { userId: userId };
     const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: -1 } });
 
     return result.value !== null;

@@ -11,7 +11,7 @@ export class User {
 
   // User info
   email!: string | null;
-  registratedDate!: Date;
+  registratedDate!: number;
   timeZone!: string;
   notifiactionSettings!: NotificationSettings;
 
@@ -22,7 +22,7 @@ export class User {
     const user = new User();
     user.auth0UserId = auth0UserId;
     user.email = userMail;
-    user.registratedDate = new Date();
+    user.registratedDate = Math.floor(Date.now() / 1000);
     user.timeZone = 'Europe/Prague';
     user.notifiactionSettings = new NotificationSettings();
     user.connectionId = 1;

@@ -13,7 +13,7 @@ export class MembershipInfo {
 
   // currentMembership: HOBBY, JUNIOR, SENIOR
   currentMembership!: string | null;
-  currentMembershipFinishes!: Date | null;
+  currentMembershipFinishes!: number | null;
   currentConnections!: number;
   currentActiveConnections!: number;
   currentImmediateSyncs!: number;

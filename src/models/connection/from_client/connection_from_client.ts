@@ -21,7 +21,7 @@ export class ConnectionFromClient {
 
   // eslint-disable-next-line
   constructor(obj: any) {
-    this.configSyncJobDefinition = new SyncJobDefinitionFromClient(obj.configSyncJobDefiniton);
+    this.configSyncJobDefinition = new SyncJobDefinitionFromClient(obj.configSyncJobDefinition);
     this.timeEntrySyncJobDefinition = new SyncJobDefinitionFromClient(obj.timeEntrySyncJobDefinition);
     this.firstTool = obj.firstTool;
     this.secondTool = obj.secondTool;

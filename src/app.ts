@@ -8,32 +8,29 @@ import { Constants } from './shared/constants';
 const usersRoutes = require('./routes/users');
 const membershipRoutes = require('./routes/membership');
 const connectionRoutes = require('./routes/connections');
-
 const syncedServicesConfigRoutes = require('./routes/synced_services_config');
-
-// const jobsRoutes = require('./routes/jobs');
-// const jobLogsRoutes = require('./routes/job_logs');
+const jobLogsRoutes = require('./routes/job_logs');
 
 const app = express();
 
 if (Constants.isCommercialVersion) {
   const stripeRoutes = require('./routes/stripe');
   const stripePublicRoutes = require('./routes/stripe_public');
+  const syncLogsRoutes = require('./routes/sync_logs');
 
   app.use('/api/v2/users/:auth0UserId/stripe', stripeRoutes);
   app.use('/api/v2/stripe', stripePublicRoutes);
+  app.use('/api/v2/users/:auth0UserId/syncLogs', syncLogsRoutes);
 }
 
 app.use('/api/v2/users/:auth0UserId/membership', membershipRoutes);
 app.use('/api/v2/users/:auth0UserId/connections', connectionRoutes);
+app.use('/api/v2/users/:auth0UserId/jobLogs', jobLogsRoutes);
 
 // Needs to be last, because it is catch all users route
 app.use('/api/v2/users/:auth0UserId', usersRoutes);
 
 app.use('/api/v2/synced_services_config', syncedServicesConfigRoutes);
-
-// app.use('/api/v2/jobs', jobsRoutes);
-// app.use('/api/v2/job_logs', jobLogsRoutes);
 
 app.listen(Constants.appPort, async () => {
   await databaseService.init();
