@@ -156,7 +156,7 @@ router.post('/changePassword', authCommons.checkJwt, async (req, res) => {
     return res.status(503).send('Error while creating password change ticket');
   }
 
-  res.status(200).send(response);
+  res.status(200).send(response.ticket);
 });
 
 function getManagementClient() {

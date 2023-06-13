@@ -10,6 +10,7 @@ export class MembershipInfo {
   // Stripe
   stripeCustomerId!: string | null;
   stripeSubscriptionId!: string | null;
+  stripeLastSubscriptionSessionId!: string | null;
 
   // currentMembership: HOBBY, JUNIOR, SENIOR
   currentMembership!: string | null;
@@ -24,6 +25,7 @@ export class MembershipInfo {
 
     membershipInfo.stripeCustomerId = null;
     membershipInfo.stripeSubscriptionId = null;
+    membershipInfo.stripeLastSubscriptionSessionId = null;
 
     membershipInfo.currentMembership = null;
     membershipInfo.currentMembershipFinishes = null;

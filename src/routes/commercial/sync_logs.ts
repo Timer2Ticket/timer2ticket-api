@@ -1,9 +1,9 @@
 import express from 'express';
-import { Constants } from '../shared/constants';
-import { authCommons } from '../shared/auth_commons';
-import { databaseService } from '../shared/database_service';
-import { User } from '../models/user/user';
-import { ImmediateSyncLog } from '../models/commrecial/immediate_sync_log';
+import { Constants } from '../../shared/constants';
+import { authCommons } from '../../shared/auth_commons';
+import { databaseService } from '../../shared/database_service';
+import { User } from '../../models/user/user';
+import { ImmediateSyncLog } from '../../models/commrecial/immediate_sync_log';
 
 const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));

@@ -535,8 +535,7 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
   // create log of use of immediate sync when commercial version
   if (Constants.isCommercialVersion) {
     const immediateSyncLogDescription = '#' + connection.userConnectionId + ' ' + Connection.getConnectionBetweenString(connection);
-    const change = -1;
-    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs + change, change, timeNow,'USE_CONFIG',savedJobLog._id, immediateSyncLogDescription);
+    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs, -1, timeNow,'USE_CONFIG',savedJobLog._id, immediateSyncLogDescription);
     if (!savedImmediateSyncLog) {
       return res.status(503).send('Error creating immediate sync log');
     }
@@ -615,8 +614,7 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   // create log of use of immediate sync when commercial version
   if (Constants.isCommercialVersion) {
     const immediateSyncLogDescription = '#' + connection.userConnectionId + ' ' + Connection.getConnectionBetweenString(connection);
-    const change = -1;
-    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs + change, change, timeNow,'USE_TIME_ENTRIES',savedJobLog._id, immediateSyncLogDescription);
+    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs, -1, timeNow,'USE_TIME_ENTRIES',savedJobLog._id, immediateSyncLogDescription);
     if (!savedImmediateSyncLog) {
       return res.status(503).send('Error creating immediate sync log');
     }
@@ -624,7 +622,6 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
 
   res.sendStatus(204);
 });
-
 
 /**
  * Returns user from database with auth0UserId in parameter.

@@ -210,6 +210,62 @@ export class DatabaseService {
     return result.result.ok === 1 ? result.ops[0] : null;
   }
 
+  async updateMembershipInfoStripeCustomerId(userId: ObjectId, stripeCustomerId: string): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $set: { stripeCustomerId: stripeCustomerId } }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  async createMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string, currentMembership: string, currentMembershipFinishes: number, currentConnections: number): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, {
+      $set: {
+        stripeSubscriptionId: stripeSubscriptionId,
+        currentMembership: currentMembership,
+        currentMembershipFinishes: currentMembershipFinishes,
+        currentConnections: currentConnections,
+      },
+    }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  async updateMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string, currentMembership: string, currentMembershipFinishes: number, currentConnections: number): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId, stripeSubscriptionId: stripeSubscriptionId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, {
+      $set: {
+        currentMembership: currentMembership,
+        currentMembershipFinishes: currentMembershipFinishes,
+        currentConnections: currentConnections,
+      },
+    }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  async deleteMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string): Promise<MembershipInfo | undefined | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId, stripeSubscriptionId: stripeSubscriptionId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, {
+      $set: {
+        stripeSubscriptionId: null,
+        currentMembership: null,
+        currentMembershipFinishes: null,
+        currentConnections: 0,
+      },
+    }, { returnOriginal: false });
+
+    return result.value;
+  }
+
   /**
    * Get membership info for user defined by user id
    * @param userId
@@ -223,31 +279,45 @@ export class DatabaseService {
 
   /**
    * Use immediate sync for user defined by user id
-   * findOneAndUpdate atomic
+   * findOneAndUpdate is atomic
    * @param userId
    */
   async useImmediateSync(userId: ObjectId): Promise<MembershipInfo | null | undefined> {
     if (!this._membershipInfoCollection) return null;
 
     const filterQuery = { userId: userId, currentImmediateSyncs: { $gt: 0 } };
-    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: -1 } });
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: -1 } }, { returnOriginal: false });
 
     return result.value;
   }
 
   /**
-   * Add change number of immediate syncs for user defined by user id
-   * findOneAndUpdate atomic
+   * Use immediate sync for user defined by user id
+   * findOneAndUpdate is atomic
    * @param userId
-   * @param change
    */
-  async addImmediateSync(userId: ObjectId, change: number): Promise<boolean | null> {
+  async saveLastSubscriptionSession(userId: ObjectId, subscriptionSessionId: string): Promise<MembershipInfo | null | undefined> {
     if (!this._membershipInfoCollection) return null;
 
-    const filterQuery = { userId: userId };
-    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: change } });
+    const filterQuery = { userId: userId};
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $set: { stripeLastSubscriptionSessionId: subscriptionSessionId } }, { returnOriginal: false });
 
-    return result.value !== null;
+    return result.value;
+  }
+
+  /**
+   * Add change number of immediate syncs for user defined by stripeCustomerId
+   * findOneAndUpdate is atomic
+   * @param stripeCustomerId
+   * @param change
+   */
+  async addImmediateSync(stripeCustomerId: string, change: number): Promise<MembershipInfo | null | undefined> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: change } }, { returnOriginal: false });
+
+    return result.value;
   }
 
   async addActiveConnection(userId: ObjectId): Promise<boolean | null> {
