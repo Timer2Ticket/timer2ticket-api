@@ -235,6 +235,14 @@ export class DatabaseService {
     return result.value;
   }
 
+  /**
+   * TODO return old membership info
+   * @param stripeCustomerId
+   * @param stripeSubscriptionId
+   * @param currentMembership
+   * @param currentMembershipFinishes
+   * @param currentConnections
+   */
   async updateMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string, currentMembership: string, currentMembershipFinishes: number, currentConnections: number): Promise<MembershipInfo | undefined | null> {
     if (!this._membershipInfoCollection) return null;
 
@@ -245,11 +253,16 @@ export class DatabaseService {
         currentMembershipFinishes: currentMembershipFinishes,
         currentConnections: currentConnections,
       },
-    }, { returnOriginal: false });
+    });
 
     return result.value;
   }
 
+  /**
+   * TODO return old membership info
+   * @param stripeCustomerId
+   * @param stripeSubscriptionId
+   */
   async deleteMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string): Promise<MembershipInfo | undefined | null> {
     if (!this._membershipInfoCollection) return null;
 
@@ -261,7 +274,7 @@ export class DatabaseService {
         currentMembershipFinishes: null,
         currentConnections: 0,
       },
-    }, { returnOriginal: false });
+    });
 
     return result.value;
   }
@@ -299,7 +312,7 @@ export class DatabaseService {
   async saveLastSubscriptionSession(userId: ObjectId, subscriptionSessionId: string): Promise<MembershipInfo | null | undefined> {
     if (!this._membershipInfoCollection) return null;
 
-    const filterQuery = { userId: userId};
+    const filterQuery = { userId: userId };
     const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $set: { stripeLastSubscriptionSessionId: subscriptionSessionId } }, { returnOriginal: false });
 
     return result.value;
@@ -321,19 +334,18 @@ export class DatabaseService {
   }
 
   async addActiveConnection(userId: ObjectId): Promise<boolean | null> {
-    if (!this._membershipInfoCollection) return null;
-
-    const filterQuery = { userId: userId, $expr: { $lt: ['$currentActiveConnections', '$currentConnections'] } };
-    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: 1 } });
-
-    return result.value !== null;
+    return await this.incrementActiveConnectionByAmount(userId, 1);
   }
 
   async removeActiveConnection(userId: ObjectId): Promise<boolean | null> {
+    return await this.incrementActiveConnectionByAmount(userId, -1);
+  }
+
+  async incrementActiveConnectionByAmount(userId: ObjectId, amount: number): Promise<boolean | null> {
     if (!this._membershipInfoCollection) return null;
 
     const filterQuery = { userId: userId };
-    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: -1 } });
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: amount } });
 
     return result.value !== null;
   }
@@ -358,7 +370,36 @@ export class DatabaseService {
     return this._connectionsCollection.find(filterQuery).toArray();
   }
 
-  async getActiveConnectionsByUserId(userId: ObjectId): Promise<Connection[]> {
+  async getActiveConnectionsByUserId(userId: ObjectId, limit: number): Promise<Connection[]> {
+    if (!this._connectionsCollection) return [];
+
+    const filterQuery = {
+      userId: userId,
+      isActive: true,
+    };
+    const sortQuery = { createdTimestamp: 1 };
+    return this._connectionsCollection
+      .find(filterQuery)
+      .sort(sortQuery)
+      .limit(limit)
+      .toArray();
+  }
+
+  async deactivateConnection(connectionId: ObjectId): Promise<Connection | null | undefined> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = {
+      _id: connectionId,
+      isActive: true,
+    };
+
+    const result = await this._connectionsCollection.findOneAndUpdate(filterQuery, { $set: { isActive: false } });
+
+    return result.value;
+
+  }
+
+  async getNotMarkedToDeleteConnectionsByUserId(userId: ObjectId): Promise<Connection[]> {
     if (!this._connectionsCollection) return [];
 
     const filterQuery = {
@@ -394,6 +435,25 @@ export class DatabaseService {
 
     const result = await this._connectionsCollection.replaceOne(filterQuery, connection);
     return result.result.ok === 1 ? connection : null;
+  }
+
+  async updateConnectionSyncJobConfig(connection: Connection): Promise<Connection | null | undefined> {
+    if (!this._connectionsCollection) return null;
+
+    const filterQuery = { _id: connection._id };
+
+    const result = await this._connectionsCollection.findOneAndUpdate(
+      filterQuery,
+      {
+        $set: {
+          configSyncJobDefinition: connection.configSyncJobDefinition,
+          timeEntrySyncJobDefinition: connection.timeEntrySyncJobDefinition,
+        },
+      },
+      { returnOriginal: false },
+    );
+    return result.value;
+
   }
 
   async deleteConnectionById(id: ObjectId): Promise<boolean> {

@@ -12,7 +12,7 @@ export class MembershipInfo {
   stripeSubscriptionId!: string | null;
   stripeLastSubscriptionSessionId!: string | null;
 
-  // currentMembership: HOBBY, JUNIOR, SENIOR
+  // currentMembership: Hobby, Junior, Senior
   currentMembership!: string | null;
   currentMembershipFinishes!: number | null;
   currentConnections!: number;

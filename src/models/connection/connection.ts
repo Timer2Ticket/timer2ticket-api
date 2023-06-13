@@ -20,6 +20,7 @@ export class Connection {
   secondService!: SyncedService;
   isActive!: boolean;
   deleteTimestamp!: number | null;
+  createdTimestamp!: number;
 
   constructor(userId: ObjectId, userConnectionId: number, connectionFromClient: ConnectionFromClient, isActive: boolean) {
     this.userId = userId;
@@ -33,6 +34,7 @@ export class Connection {
 
     this.isActive = isActive;
     this.deleteTimestamp = null;
+    this.createdTimestamp = Math.floor(Date.now() / 1000);
   }
 
   static getConnectionBetweenString(connection: Connection): string {

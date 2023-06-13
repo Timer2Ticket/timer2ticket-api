@@ -121,7 +121,7 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
     return res.status(503).send('Error getting user');
   }
 
-  const connections: Connection[] = await databaseService.getActiveConnectionsByUserId(user._id);
+  const connections: Connection[] = await databaseService.getNotMarkedToDeleteConnectionsByUserId(user._id);
   if (!connections) {
     return res.status(503).send('Error getting connections');
   }
