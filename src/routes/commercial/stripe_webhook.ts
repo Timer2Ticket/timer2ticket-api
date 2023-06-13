@@ -155,8 +155,6 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
     modifiedConnectionsId = modifiedConnectionsId.concat(deactivated);
   }
 
-  console.log('modifiedConnectionsId', JSON.stringify(modifiedConnectionsId));
-
   const oldMembershipConfig = t2tLib.getMembershipConfig(oldMembershipInfo.currentMembership);
   const newMembershipConfig = t2tLib.getMembershipConfig(newMembershipName);
 
