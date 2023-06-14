@@ -21,6 +21,7 @@ export class Connection {
   isActive!: boolean;
   deleteTimestamp!: number | null;
   createdTimestamp!: number;
+  mappings!: any[];
 
   constructor(userId: ObjectId, userConnectionId: number, connectionFromClient: ConnectionFromClient, isActive: boolean) {
     this.userId = userId;
@@ -35,6 +36,7 @@ export class Connection {
     this.isActive = isActive;
     this.deleteTimestamp = null;
     this.createdTimestamp = Math.floor(Date.now() / 1000);
+    this.mappings = [];
   }
 
   static getConnectionBetweenString(connection: Connection): string {

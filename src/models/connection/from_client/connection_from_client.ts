@@ -1,7 +1,11 @@
 import { IsObject, ValidateNested } from 'class-validator';
 import superagent from 'superagent';
 import { ToolType } from '../../../enums/tools/type_of_tool';
-import { getRedmineTimeEntryActivities, getTogglTrackWorkspaces } from '../../../shared/services_config_functions';
+import {
+  getRedmineTimeEntryActivities,
+  getRedmineUserDetail, getTogglTrackUser,
+  getTogglTrackWorkspaces,
+} from '../../../shared/services_config_functions';
 import { SyncJobDefinitionFromClient } from './sync_job_definition_from_client';
 
 export class ConnectionFromClient {
@@ -82,6 +86,7 @@ export class ConnectionFromClient {
         }
       },
     );
+    const userId: string = tool.userId;
     const redmineApiKey: string = tool.redmineApiKey;
     const redmineApiPoint: string = tool.redmineApiPoint;
     const selectedRedmineDefaultTimeEntryActivity: string = tool.selectedRedmineDefaultTimeEntryActivity;
@@ -107,6 +112,18 @@ export class ConnectionFromClient {
       return false;
     }
 
+    const responseUserDetail: superagent.Response | number = await getRedmineUserDetail(redmineApiPoint, redmineApiKey);
+    if (typeof responseUserDetail === 'number') {
+      errors.push(`Invalid redmine api key or api point.`);
+      return false;
+    }
+
+    const responseUserId = responseUserDetail.body['user']['id'];
+    if(responseUserId !== userId) {
+      errors.push(`Invalid redmine user id.`);
+      return false;
+    }
+
     return true;
   }
 
@@ -125,6 +142,7 @@ export class ConnectionFromClient {
         }
       },
     );
+    const userId: string = tool.userId;
     const togglTrackApiKey: string = tool.togglTrackApiKey;
     const selectedTogglTrackWorkspace: string = tool.selectedTogglTrackWorkspace;
     const selectedTogglTrackWorkspaceName: string = tool.selectedTogglTrackWorkspaceName;
@@ -146,6 +164,18 @@ export class ConnectionFromClient {
 
     if (!foundTogglTrackWorkspace) {
       errors.push(`Invalid toggl track workspace.`);
+      return false;
+    }
+
+    const responseMe: superagent.Response | number = await getTogglTrackUser(togglTrackApiKey);
+    if (typeof responseMe === 'number') {
+      errors.push(`Invalid toggl track api key.`);
+      return false;
+    }
+
+    const responseUserId = responseMe.body['id'];
+    if(responseUserId !== userId) {
+      errors.push(`Invalid toggl track user id.`);
       return false;
     }
 

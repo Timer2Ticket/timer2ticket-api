@@ -3,7 +3,13 @@ import { Workspace } from './workspace';
 import { ToolType } from '../../../enums/tools/type_of_tool';
 
 export class ServiceConfig {
+  /**
+   * shared
+   */
+  userId!: number;
+
   apiKey!: string;
+
   // For Redmine
   defaultTimeEntryActivity!: DefaultTimeEntryActivity | null;
   // For Redmine
@@ -13,6 +19,7 @@ export class ServiceConfig {
 
   // eslint-disable-next-line
   constructor(toolFromUser: any) {
+    this.userId = toolFromUser.userId;
 
     if (toolFromUser.tool === ToolType.JIRA.name) {
       // TODO
