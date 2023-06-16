@@ -4,6 +4,8 @@ import { databaseService } from '../../shared/database_service';
 import { MembershipInfo } from '../../models/commrecial/membership_info';
 import { ObjectId } from 'mongodb';
 import { Connection } from '../../models/connection/connection';
+import { translateService } from '../../shared/translate_service';
+import { sendEmail } from '../../shared/email_service';
 
 const router = express.Router({ mergeParams: true });
 
@@ -74,7 +76,7 @@ async function processSubscriptionUpdated(data: any) {
     numberOfConnections,
   );
 
-  if(user) {
+  if (user) {
     await reconfigureConnections(user, membershipName, numberOfConnections);
   }
 }
@@ -88,10 +90,10 @@ async function processSubscriptionDeleted(data: any) {
     stripeSubscriptionId,
   );
 
-  if(user) {
+  if (user) {
     // Hobby membership because when user reactivate the subscription, it will be at least Hobby
     // So the configuration of all connection will correspond to Hobby parameters
-    await reconfigureConnections(user, "Hobby", 0);
+    await reconfigureConnections(user, 'Hobby', 0);
   }
 }
 
@@ -149,10 +151,15 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
   const numberOfActiveConnections = oldMembershipInfo.currentActiveConnections;
 
   const numberToDeactivate = numberOfActiveConnections - newNumberOfConnections;
-  let modifiedConnectionsId: ObjectId[] = [];
+  const modifiedConnectionsId: ObjectId[] = [];
+  const deactivatedConnections: string[] = [];
+  const changedConfigConnections: string[] = [];
   if (numberToDeactivate > 0) {
     const deactivated = await deactivateConnections(userId, numberToDeactivate);
-    modifiedConnectionsId = modifiedConnectionsId.concat(deactivated);
+    for (let i = 0; i < deactivated.length; i++) {
+      modifiedConnectionsId.push(deactivated[i]._id);
+      deactivatedConnections.push(Connection.getConnectionBetweenString(deactivated[i]));
+    }
   }
 
   const oldMembershipConfig = t2tLib.getMembershipConfig(oldMembershipInfo.currentMembership);
@@ -160,90 +167,136 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
 
   if (newMembershipConfig.membershipTier < oldMembershipConfig.membershipTier) {
     const modified = await updateConnectionsSynchronizationSchedulesByMembership(userId, newMembershipConfig);
-    modifiedConnectionsId = modifiedConnectionsId.concat(modified);
-  }
-
-  // TODO send modified connections to T2T-core to reconfigure
-}
-
-async function updateConnectionsSynchronizationSchedulesByMembership(userId: ObjectId, currentMembershipConfig: any): Promise<ObjectId[]> {
-  const modifiedConnectionsId: ObjectId[] = [];
-  const connections = await databaseService.getConnectionsByUserId(userId);
-  if (!connections) {
-    return modifiedConnectionsId;
-  }
-
-  for(let i = 0; i < connections.length; i++) {
-    const modified = updateConnectionSynchonizationSchedule(connections[i], currentMembershipConfig);
-    if(modified) {
-      await databaseService.updateConnectionSyncJobConfig(connections[i]);
-      modifiedConnectionsId.push(connections[i]._id);
+    for (let i = 0; i < modified.length; i++) {
+      modifiedConnectionsId.push(modified[i]._id);
+      changedConfigConnections.push(Connection.getConnectionBetweenString(modified[i]));
     }
   }
 
-  return modifiedConnectionsId;
+  if (modifiedConnectionsId.length > 0) {
+    sendNotifycationEmail(userId, deactivatedConnections, changedConfigConnections);
+
+    // TODO send modified connections to T2T-core to reconfigure
+  }
+}
+
+async function sendNotifycationEmail(userId: ObjectId, deactivatedConnections: string[], changedConfigConnections: string[]) {
+  const user = await databaseService.getUserById(userId);
+  if (!user || !user.email) {
+    return;
+  }
+  const language = 'en';
+
+  const emailMessage = getChangedConnectionsEmailMessage(language, deactivatedConnections, changedConfigConnections);
+
+  sendEmail(
+    user.email,
+    language,
+    translateService.get(language, 'emailNotifyMembershipChangesSubject'),
+    emailMessage,
+  );
+}
+
+function getChangedConnectionsEmailMessage(language: string, deactivatedConnections: string[], changedConfigConnections: string[]) {
+  let message = '';
+  message += translateService.get(language, 'emailNotifyMembershipChangesBodyBegin');
+
+  if (deactivatedConnections.length > 0 && changedConfigConnections.length > 0) {
+    message += translateService.get(language, 'emailNotifyMembershipChangesBodySyncSchedule')
+      .replace(/{{ connections }}/g, changedConfigConnections.toString());
+    message += translateService.get(language, 'emailNotifyMembershipChangesBodyAnd');
+    message += translateService.get(language, 'emailNotifyMembershipChangesBodyDeactiavted')
+      .replace(/{{ connections }}/g, deactivatedConnections.toString());
+  } else if (deactivatedConnections.length > 0) {
+    message += translateService.get(language, 'emailNotifyMembershipChangesBodyDeactiavted')
+      .replace(/{{ connections }}/g, deactivatedConnections.toString());
+  } else if (changedConfigConnections.length > 0) {
+    message += translateService.get(language, 'emailNotifyMembershipChangesBodySyncSchedule')
+      .replace(/{{ connections }}/g, changedConfigConnections.toString());
+  }
+
+  message += translateService.get(language, 'emailNotifyMembershipChangesBodyEnd');
+  return message;
+}
+
+async function updateConnectionsSynchronizationSchedulesByMembership(userId: ObjectId, currentMembershipConfig: any): Promise<Connection[]> {
+  const modifiedConnections: Connection[] = [];
+  const connections = await databaseService.getConnectionsByUserId(userId);
+  if (!connections) {
+    return modifiedConnections;
+  }
+
+  for (let i = 0; i < connections.length; i++) {
+    const modified = updateConnectionSynchonizationSchedule(connections[i], currentMembershipConfig);
+    if (modified) {
+      await databaseService.updateConnectionSyncJobConfig(connections[i]);
+      modifiedConnections.push(connections[i]);
+    }
+  }
+
+  return modifiedConnections;
 }
 
 function updateConnectionSynchonizationSchedule(connection: Connection, currentMembershipConfig: any) {
   let isModified = false;
 
-  if(!currentMembershipConfig.isSyncEveryHourEnabled && connection.configSyncJobDefinition.everyHour) {
+  if (!currentMembershipConfig.isSyncEveryHourEnabled && connection.configSyncJobDefinition.everyHour) {
     connection.configSyncJobDefinition.everyHour = false;
     isModified = true;
   }
-  if(!currentMembershipConfig.isSyncEveryHourEnabled && connection.timeEntrySyncJobDefinition.everyHour) {
+  if (!currentMembershipConfig.isSyncEveryHourEnabled && connection.timeEntrySyncJobDefinition.everyHour) {
     connection.timeEntrySyncJobDefinition.everyHour = false;
     isModified = true;
   }
 
-  if(!currentMembershipConfig.isSyncEveryDayEnabled && connection.configSyncJobDefinition.selectionOfDays.length > 1) {
-    connection.configSyncJobDefinition.selectionOfDays.sort((a, b) => a - b)
+  if (!currentMembershipConfig.isSyncEveryDayEnabled && connection.configSyncJobDefinition.selectionOfDays.length > 1) {
+    connection.configSyncJobDefinition.selectionOfDays.sort((a, b) => a - b);
     connection.configSyncJobDefinition.selectionOfDays = [connection.configSyncJobDefinition.selectionOfDays[0]];
     isModified = true;
   }
 
-  if(!currentMembershipConfig.isSyncEveryDayEnabled && connection.timeEntrySyncJobDefinition.selectionOfDays.length > 1) {
-    connection.timeEntrySyncJobDefinition.selectionOfDays.sort((a, b) => a - b)
+  if (!currentMembershipConfig.isSyncEveryDayEnabled && connection.timeEntrySyncJobDefinition.selectionOfDays.length > 1) {
+    connection.timeEntrySyncJobDefinition.selectionOfDays.sort((a, b) => a - b);
     connection.timeEntrySyncJobDefinition.selectionOfDays = [connection.timeEntrySyncJobDefinition.selectionOfDays[0]];
     isModified = true;
   }
 
-  if(isModified) {
+  if (isModified) {
     connection.configSyncJobDefinition.schedule = t2tLib.ValidateMembership.getCronString(
       connection.configSyncJobDefinition.syncTime,
       connection.configSyncJobDefinition.everyHour,
-      connection.configSyncJobDefinition.selectionOfDays
-    )
+      connection.configSyncJobDefinition.selectionOfDays,
+    );
     connection.timeEntrySyncJobDefinition.schedule = t2tLib.ValidateMembership.getCronString(
       connection.timeEntrySyncJobDefinition.syncTime,
       connection.timeEntrySyncJobDefinition.everyHour,
-      connection.timeEntrySyncJobDefinition.selectionOfDays
-    )
+      connection.timeEntrySyncJobDefinition.selectionOfDays,
+    );
   }
 
   return isModified;
 }
 
-async function deactivateConnections(userId: ObjectId, numberToDeactivate: number): Promise<ObjectId[]> {
-  const modifiedConnectionsId: ObjectId[] = [];
+async function deactivateConnections(userId: ObjectId, numberToDeactivate: number): Promise<Connection[]> {
+  const modifiedConnections: Connection[] = [];
   const connectionsToDeactive = await databaseService.getActiveConnectionsByUserId(userId, numberToDeactivate);
-  if(!connectionsToDeactive) {
-    return modifiedConnectionsId;
+  if (!connectionsToDeactive) {
+    return modifiedConnections;
   }
 
   let deactivatedConnections = 0;
 
-  for(let i = 0; i < connectionsToDeactive.length; i++) {
+  for (let i = 0; i < connectionsToDeactive.length; i++) {
     const result = await databaseService.deactivateConnection(connectionsToDeactive[i]._id);
-    if(result) {
-      modifiedConnectionsId.push(connectionsToDeactive[i]._id);
+    if (result) {
+      modifiedConnections.push(connectionsToDeactive[i]);
       deactivatedConnections++;
     }
   }
 
   await databaseService.incrementActiveConnectionByAmount(userId, -deactivatedConnections);
 
-  return modifiedConnectionsId;
+  return modifiedConnections;
 }
 
 module.exports = router;
