@@ -12,6 +12,9 @@ export class MembershipInfo {
   stripeSubscriptionId!: string | null;
   stripeLastSubscriptionSessionId!: string | null;
 
+  // Fakturoid
+  fakturoidSubjectId!: string | null;
+
   // currentMembership: Hobby, Junior, Senior
   currentMembership!: string | null;
   currentMembershipFinishes!: number | null;
@@ -26,6 +29,8 @@ export class MembershipInfo {
     membershipInfo.stripeCustomerId = null;
     membershipInfo.stripeSubscriptionId = null;
     membershipInfo.stripeLastSubscriptionSessionId = null;
+
+    membershipInfo.fakturoidSubjectId = null;
 
     membershipInfo.currentMembership = null;
     membershipInfo.currentMembershipFinishes = null;

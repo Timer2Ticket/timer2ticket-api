@@ -54,10 +54,16 @@ router.post('/webhook', async (req, res) => {
       await processSubscriptionDeleted(event.data.object);
       break;
     case 'invoice.payment_succeeded':
-      await processPaymentSucceeded(event.data.object);
+      await processInvoicePaymentSucceeded(event.data.object);
       break;
+    case 'invoice.marked_uncollectible':
+      await voidInvoice(event.data.object.id);
   }
 });
+
+async function voidInvoice(invoiceId: string) {
+  t2tLib.stripeCommons.voidInvoice(invoiceId);
+}
 
 async function processSubscriptionUpdated(data: any) {
   const stripeCustomerId = data.customer;
@@ -97,7 +103,7 @@ async function processSubscriptionDeleted(data: any) {
   }
 }
 
-async function processPaymentSucceeded(data: any) {
+async function processInvoicePaymentSucceeded(data: any) {
   const stripeCustomerId = data.customer;
   const stripePriceId = data.lines.data[0].price.id;
   const billingReason = data.billing_reason;
@@ -109,6 +115,45 @@ async function processPaymentSucceeded(data: any) {
     // only for new subscription
     await processSubscriptionCreated(stripeCustomerId, data);
   }
+
+  saveInvoiceToFakturoid(data);
+}
+
+async function saveInvoiceToFakturoid(data: any) {
+  const customerStripeId = data.customer;
+  const customerInfo = await databaseService.getMembershipInfoByStripeCustomerId(customerStripeId);
+  if(!customerInfo) {
+    return;
+  }
+
+  let fakturoidSubjectId = customerInfo.fakturoidSubjectId;
+  if(!fakturoidSubjectId) {
+    // create subject in fakturoid
+    const response = await t2tLib.fakturoidCommons.createSubject(data);
+    if(!response) {
+      return;
+    }
+    fakturoidSubjectId = response.body.id;
+    if(fakturoidSubjectId) {
+      await databaseService.updateFakturoidSubjectId(customerInfo.userId, fakturoidSubjectId);
+    }
+  } else {
+    // update subject in fakturoid
+    const response = await t2tLib.fakturoidCommons.updateSubject(data, fakturoidSubjectId);
+    if(!response) {
+      return;
+    }
+  }
+
+  // create invoice in fakturoid
+  const response = await t2tLib.fakturoidCommons.createInvoice(data, fakturoidSubjectId);
+  if(!response) {
+    return;
+  }
+
+  // make invoice as paid in fakturoid
+  const invoiceId = response.body.id;
+  t2tLib.fakturoidCommons.markInvoiceAsPaid(invoiceId);
 }
 
 async function processSubscriptionCreated(stripeCustomerId: string, data: any) {
@@ -141,7 +186,7 @@ async function processImmediateSyncsBuy(stripeCustomerId: string, data: any) {
 }
 
 async function createBuyImmediateSyncsLog(membershipInfo: MembershipInfo, stripeCustomerId: string, quantity: number, amount: number) {
-  const timeNow = Math.floor(Date.now() / 1000);
+  const timeNow = Math.floor(Date.now());
   const immediateSyncLogDescription = `Buy ${quantity} immediate syncs for $${amount}`;
   await databaseService.createImmediateSyncLog(membershipInfo.userId, membershipInfo.currentImmediateSyncs, quantity, timeNow, 'BUY', null, immediateSyncLogDescription);
 }

@@ -411,7 +411,7 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
   }
 
   // mark to delete
-  connection.deleteTimestamp = Math.floor(Date.now() / 1000);
+  connection.deleteTimestamp = Math.floor(Date.now());
   connection.isActive = false;
   const result = await databaseService.updateConnectionById(connection._id, connection);
   if (!result) {
@@ -524,7 +524,7 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
   }
 
   // create JobLog
-  const timeNow = Math.floor(Date.now() / 1000);
+  const timeNow = Math.floor(Date.now());
 
   const savedJobLog = await databaseService.createJobLog(user, savedConnection,'config', timeNow);
 
@@ -603,7 +603,7 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   }
 
   // create JobLog
-  const timeNow = Math.floor(Date.now() / 1000);
+  const timeNow = Math.floor(Date.now());
 
   const savedJobLog = await databaseService.createJobLog(user, savedConnection,'time-entries', timeNow);
 

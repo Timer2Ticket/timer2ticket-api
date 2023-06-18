@@ -35,7 +35,7 @@ export class Connection {
 
     this.isActive = isActive;
     this.deleteTimestamp = null;
-    this.createdTimestamp = Math.floor(Date.now() / 1000);
+    this.createdTimestamp = Math.floor(Date.now());
     this.mappings = [];
   }
 

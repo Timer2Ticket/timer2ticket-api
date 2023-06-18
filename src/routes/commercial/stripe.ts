@@ -136,6 +136,7 @@ router.post('/customerPortal', authCommons.checkJwt, async (req, res) => {
   }
 
   const auth0UserId = req.params.auth0UserId;
+  const flowType = req.body.flowType;
 
   // get user from database
   const user: User | null = await getUserFromDatabase(auth0UserId);
@@ -150,9 +151,14 @@ router.post('/customerPortal', authCommons.checkJwt, async (req, res) => {
   }
 
   // create stripe subscription link to payment page
-  const customerPortalUrl = await t2tLib.stripeCommons.getCustomerPortalLink(membershipInfo.stripeCustomerId, `${req.get('origin')}${returnUrlPath}`);
+  let customerPortalUrl;
+  if(flowType === "subscription_update") {
+    customerPortalUrl = await t2tLib.stripeCommons.getCustomerPortalLinkSubscription(membershipInfo.stripeCustomerId, membershipInfo.stripeSubscriptionId, `${req.get('origin')}${returnUrlPath}`);
+  } else {
+    customerPortalUrl = await t2tLib.stripeCommons.getCustomerPortalLink(membershipInfo.stripeCustomerId, `${req.get('origin')}${returnUrlPath}`);
+  }
   if (!customerPortalUrl) {
-    return res.status(503).send('Error creating stripe subscription');
+    return res.status(503).send('Error getting customer portal url');
   }
   return res.status(200).send(customerPortalUrl);
 });

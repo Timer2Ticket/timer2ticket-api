@@ -285,6 +285,17 @@ export class DatabaseService {
   }
 
   /**
+   * Get membership info for user defined by user id
+   * @param userId
+   */
+  async getMembershipInfoByStripeCustomerId(stripeCustomerId: string): Promise<MembershipInfo | null> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { stripeCustomerId: stripeCustomerId };
+    return this._membershipInfoCollection.findOne(filterQuery);
+  }
+
+  /**
    * Use immediate sync for user defined by user id
    * findOneAndUpdate is atomic
    * @param userId
@@ -294,6 +305,15 @@ export class DatabaseService {
 
     const filterQuery = { userId: userId, currentImmediateSyncs: { $gt: 0 } };
     const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentImmediateSyncs: -1 } }, { returnOriginal: false });
+
+    return result.value;
+  }
+
+  async updateFakturoidSubjectId(userId: ObjectId, fakturoidSubjectId: string): Promise<MembershipInfo | null | undefined> {
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $set: { fakturoidSubjectId: fakturoidSubjectId } }, { returnOriginal: false });
 
     return result.value;
   }
