@@ -9,6 +9,7 @@ import { ObjectId } from 'mongodb';
 import { SyncJobDefinitionFromClient } from '../models/connection/from_client/sync_job_definition_from_client';
 import { Constants } from '../shared/constants';
 import { MembershipInfo } from '../models/commrecial/membership_info';
+import { coreService } from '../shared/core_service';
 
 const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
@@ -101,6 +102,11 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
 
   if (!result) {
     return res.status(400).send('Error creating connection');
+  }
+
+  const coreServiceResponse = await coreService.createConnection(result._id.toHexString());
+  if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+    return res.status(503).send('Error creating connection');
   }
 
   return res.status(201).send(result);
@@ -238,6 +244,11 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
 
   result._id = connection._id;
 
+  const coreServiceResponse = await coreService.updateConnections([result._id.toHexString()]);
+  if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+    return res.status(503).send('Error updating connection');
+  }
+
   return res.status(200).send(result);
 });
 
@@ -365,6 +376,11 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
 
   result._id = connection._id;
 
+  const coreServiceResponse = await coreService.updateConnections([result._id.toHexString()]);
+  if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+    return res.status(503).send('Error updating connection');
+  }
+
   return res.status(200).send(result);
 });
 
@@ -418,6 +434,11 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Error deleting connection');
   }
 
+  const coreServiceResponse = await coreService.updateConnections([result._id.toHexString()]);
+  if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+    return res.status(503).send('Error deleting connection');
+  }
+
   return res.sendStatus(204);
 });
 
@@ -461,6 +482,11 @@ router.post('/:connectionId/restore', authCommons.checkJwt, async (req, res) => 
   const result = await databaseService.updateConnectionById(connection._id, connection);
   if (!result) {
     return res.status(400).send('Error restoring connection');
+  }
+
+  const coreServiceResponse = await coreService.updateConnections([result._id.toHexString()]);
+  if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+    return res.status(503).send('Error restoring connection');
   }
 
   return res.sendStatus(204);
@@ -541,6 +567,11 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
     }
   }
 
+  const coreServiceResponse = await coreService.syncConfigObjects(savedJobLog._id.toHexString());
+  if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+    return res.status(503).send('Error deleting connection');
+  }
+
   res.sendStatus(204);
 });
 
@@ -618,6 +649,11 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
     if (!savedImmediateSyncLog) {
       return res.status(503).send('Error creating immediate sync log');
     }
+  }
+
+  const coreServiceResponse = await coreService.syncTimeEntries(savedJobLog._id.toHexString());
+  if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+    return res.status(503).send('Error deleting connection');
   }
 
   res.sendStatus(204);

@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb';
 import { Connection } from '../../models/connection/connection';
 import { translateService } from '../../shared/translate_service';
 import { sendEmail } from '../../shared/email_service';
+import { coreService } from '../../shared/core_service';
 
 const router = express.Router({ mergeParams: true });
 
@@ -196,13 +197,13 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
   const numberOfActiveConnections = oldMembershipInfo.currentActiveConnections;
 
   const numberToDeactivate = numberOfActiveConnections - newNumberOfConnections;
-  const modifiedConnectionsId: ObjectId[] = [];
+  const modifiedConnectionsIds: string[] = [];
   const deactivatedConnections: string[] = [];
   const changedConfigConnections: string[] = [];
   if (numberToDeactivate > 0) {
     const deactivated = await deactivateConnections(userId, numberToDeactivate);
     for (let i = 0; i < deactivated.length; i++) {
-      modifiedConnectionsId.push(deactivated[i]._id);
+      modifiedConnectionsIds.push(deactivated[i]._id.toHexString());
       deactivatedConnections.push(Connection.getConnectionBetweenString(deactivated[i]));
     }
   }
@@ -213,15 +214,17 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
   if (newMembershipConfig.membershipTier < oldMembershipConfig.membershipTier) {
     const modified = await updateConnectionsSynchronizationSchedulesByMembership(userId, newMembershipConfig);
     for (let i = 0; i < modified.length; i++) {
-      modifiedConnectionsId.push(modified[i]._id);
+      modifiedConnectionsIds.push(modified[i]._id.toHexString());
       changedConfigConnections.push(Connection.getConnectionBetweenString(modified[i]));
     }
   }
 
-  if (modifiedConnectionsId.length > 0) {
+  if (modifiedConnectionsIds.length > 0) {
+    // no need to wait
     sendNotifycationEmail(userId, deactivatedConnections, changedConfigConnections);
 
-    // TODO send modified connections to T2T-core to reconfigure
+    // no need to wait
+    coreService.updateConnections(modifiedConnectionsIds);
   }
 }
 

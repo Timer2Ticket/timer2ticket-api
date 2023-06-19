@@ -4,6 +4,7 @@ import { Constants } from '../shared/constants';
 import { authCommons } from '../shared/auth_commons';
 import { validate } from 'class-validator';
 import { PatchUserFromClient } from '../models/user/from_client/patch_user_from_client';
+import { coreService } from '../shared/core_service';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const ManagementClient = require('auth0').ManagementClient;
@@ -121,6 +122,19 @@ router.patch('/', authCommons.checkJwt, async (req, res) => {
   }
   if ('timeZone' in req.body && fromClient.timeZone) {
     user.timeZone = fromClient.timeZone;
+
+    // Update connections in core service
+    const userConnections = await databaseService.getConnectionsByUserId(user._id);
+    if(!userConnections) {
+      return res.status(503).send('Error while getting user connections');
+    }
+
+    const userConnectionsIds = userConnections.map((connection) => connection._id.toHexString());
+
+    const coreServiceResponse = await coreService.updateConnections(userConnectionsIds);
+    if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
+      return res.status(503).send('Error updating connection');
+    }
   }
 
   const updatedUser = await databaseService.updateUser(user._id, user);
