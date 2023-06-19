@@ -71,7 +71,7 @@ async function processSubscriptionUpdated(data: any) {
   const stripeSubscriptionId = data.id;
   const stripePriceId = data.items.data[0].price.id;
   const numberOfConnections = parseInt(data.items.data[0].quantity);
-  const subscriptionEnds = parseInt(data.current_period_end);
+  const subscriptionEnds = parseInt(data.current_period_end) * 1000;
 
   const membershipName = await t2tLib.getMembershipNameByPriceId(stripePriceId);
 
@@ -161,7 +161,7 @@ async function processSubscriptionCreated(stripeCustomerId: string, data: any) {
   const stripeSubscriptionId = data.lines.data[0].subscription;
   const stripePriceId = data.lines.data[0].price.id;
   const numberOfConnections = parseInt(data.lines.data[0].quantity) + parseInt(data.lines.data[1].quantity);
-  const subscriptionEnds = parseInt(data.lines.data[0].period.end);
+  const subscriptionEnds = parseInt(data.lines.data[0].period.end) * 1000;
 
   const membershipName = await t2tLib.getMembershipNameByPriceId(stripePriceId);
 
@@ -197,13 +197,13 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
   const numberOfActiveConnections = oldMembershipInfo.currentActiveConnections;
 
   const numberToDeactivate = numberOfActiveConnections - newNumberOfConnections;
-  const modifiedConnectionsIds: string[] = [];
+  const modifiedConnectionsIdsSet: Set<string> = new Set();
   const deactivatedConnections: string[] = [];
   const changedConfigConnections: string[] = [];
   if (numberToDeactivate > 0) {
     const deactivated = await deactivateConnections(userId, numberToDeactivate);
     for (let i = 0; i < deactivated.length; i++) {
-      modifiedConnectionsIds.push(deactivated[i]._id.toHexString());
+      modifiedConnectionsIdsSet.add(deactivated[i]._id.toHexString());
       deactivatedConnections.push(Connection.getConnectionBetweenString(deactivated[i]));
     }
   }
@@ -214,10 +214,12 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
   if (newMembershipConfig.membershipTier < oldMembershipConfig.membershipTier) {
     const modified = await updateConnectionsSynchronizationSchedulesByMembership(userId, newMembershipConfig);
     for (let i = 0; i < modified.length; i++) {
-      modifiedConnectionsIds.push(modified[i]._id.toHexString());
+      modifiedConnectionsIdsSet.add(modified[i]._id.toHexString());
       changedConfigConnections.push(Connection.getConnectionBetweenString(modified[i]));
     }
   }
+
+  const modifiedConnectionsIds = Array.from(modifiedConnectionsIdsSet);
 
   if (modifiedConnectionsIds.length > 0) {
     // no need to wait
@@ -235,14 +237,14 @@ async function sendNotifycationEmail(userId: ObjectId, deactivatedConnections: s
   }
   const language = 'en';
 
-  const emailMessage = getChangedConnectionsEmailMessage(language, deactivatedConnections, changedConfigConnections);
-
-  sendEmail(
-    user.email,
-    language,
-    translateService.get(language, 'emailNotifyMembershipChangesSubject'),
-    emailMessage,
-  );
+  // const emailMessage = getChangedConnectionsEmailMessage(language, deactivatedConnections, changedConfigConnections);
+  //
+  // sendEmail(
+  //   user.email,
+  //   language,
+  //   translateService.get(language, 'emailNotifyMembershipChangesSubject'),
+  //   emailMessage,
+  // );
 }
 
 function getChangedConnectionsEmailMessage(language: string, deactivatedConnections: string[], changedConfigConnections: string[]) {
