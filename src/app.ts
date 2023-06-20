@@ -1,6 +1,7 @@
 import express from 'express';
 import { databaseService } from './shared/database_service';
 import { Constants } from './shared/constants';
+import { translateService } from './shared/translate_service';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 
@@ -33,6 +34,7 @@ app.use('/api/v2/synced_services_config', syncedServicesConfigRoutes);
 
 app.listen(Constants.appPort, async () => {
   await databaseService.init();
+  await translateService.init();
 
   return console.log(`Server is listening on ${Constants.appPort}`);
 });

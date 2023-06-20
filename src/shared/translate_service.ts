@@ -1,5 +1,5 @@
 export class TranslateService {
-  private _translateMap: Map<string, Map<string, string>> | undefined;
+  _translateMap: Map<string, Map<string, string>> | undefined;
 
   private static _instance: TranslateService;
 

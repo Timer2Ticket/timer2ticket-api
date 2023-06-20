@@ -237,14 +237,14 @@ async function sendNotifycationEmail(userId: ObjectId, deactivatedConnections: s
   }
   const language = 'en';
 
-  // const emailMessage = getChangedConnectionsEmailMessage(language, deactivatedConnections, changedConfigConnections);
-  //
-  // sendEmail(
-  //   user.email,
-  //   language,
-  //   translateService.get(language, 'emailNotifyMembershipChangesSubject'),
-  //   emailMessage,
-  // );
+  const emailMessage = getChangedConnectionsEmailMessage(language, deactivatedConnections, changedConfigConnections);
+
+  sendEmail(
+    user.email,
+    language,
+    translateService.get(language, 'emailNotifyMembershipChangesSubject'),
+    emailMessage,
+  );
 }
 
 function getChangedConnectionsEmailMessage(language: string, deactivatedConnections: string[], changedConfigConnections: string[]) {
