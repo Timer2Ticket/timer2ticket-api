@@ -148,8 +148,8 @@ export class DatabaseService {
     if (!this._jobLogsCollection) return [];
 
     const filterQuery = { userId: userId };
-    // sort by date desc, limit to only 100
-    const sortQuery = { scheduledDate: -1 };
+    // sort by date asc, limit to only 100
+    const sortQuery = { scheduledDate: 1 };
     return this._jobLogsCollection
       .find(filterQuery)
       .sort(sortQuery)
@@ -172,8 +172,8 @@ export class DatabaseService {
     if (!this._immediateSyncLogsCollection) return [];
 
     const filterQuery = { userId: userId };
-    // sort by date desc, limit to only 100
-    const sortQuery = { date: -1 };
+    // sort by date asc, limit to only 100
+    const sortQuery = { date: 1 };
     return this._immediateSyncLogsCollection
       .find(filterQuery)
       .sort(sortQuery)

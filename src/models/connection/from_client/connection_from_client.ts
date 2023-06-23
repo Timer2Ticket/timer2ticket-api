@@ -27,14 +27,25 @@ export class ConnectionFromClient {
   constructor(obj: any) {
     this.configSyncJobDefinition = new SyncJobDefinitionFromClient(obj.configSyncJobDefinition);
     this.timeEntrySyncJobDefinition = new SyncJobDefinitionFromClient(obj.timeEntrySyncJobDefinition);
+    if (obj.firstTool.tool == ToolType.REDMINE.name) {
+      this.checkRedmineUrl(obj.firstTool);
+    } else if (obj.secondTool.tool == ToolType.REDMINE.name) {
+      this.checkRedmineUrl(obj.secondTool);
+    }
     this.firstTool = obj.firstTool;
     this.secondTool = obj.secondTool;
+  }
+
+  private checkRedmineUrl(tool: any) {
+    tool.redmineApiPoint = tool.redmineApiPoint.endsWith('/')
+      ? tool.redmineApiPoint
+      : `${tool.redmineApiPoint}/`;
   }
 
   async validateConnectionTools(errors: string[]): Promise<boolean> {
     let result = true;
 
-    if(this.firstTool.tool == this.secondTool.tool) {
+    if (this.firstTool.tool == this.secondTool.tool) {
       errors.push('Both tools are the same');
       return false;
     }
@@ -119,7 +130,7 @@ export class ConnectionFromClient {
     }
 
     const responseUserId = responseUserDetail.body['user']['id'];
-    if(responseUserId !== userId) {
+    if (responseUserId !== userId) {
       errors.push(`Invalid redmine user id.`);
       return false;
     }
@@ -174,7 +185,7 @@ export class ConnectionFromClient {
     }
 
     const responseUserId = responseMe.body['id'];
-    if(responseUserId !== userId) {
+    if (responseUserId !== userId) {
       errors.push(`Invalid toggl track user id.`);
       return false;
     }
