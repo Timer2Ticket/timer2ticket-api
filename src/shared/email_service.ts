@@ -9,6 +9,9 @@ export async function sendEmail(
   text: string,
   isTextHtml = true,
 ): Promise<boolean> {
+  if(!Constants.emailHost) {
+    return false;
+  }
   const transporter = nodemailer.createTransport({
     host: Constants.emailHost,
     port: 465,
