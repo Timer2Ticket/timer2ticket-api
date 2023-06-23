@@ -98,6 +98,12 @@ export class DatabaseService {
     return this._usersCollection.findOne(filterQuery);
   }
 
+  async getMigratedUser(email: string) : Promise<User | null> {
+    if (!this._usersCollection) return null;
+    const filterQuery = { email: email, auth0UserId: "" };
+    return this._usersCollection.findOne(filterQuery);
+  }
+
   /**
    * Create user
    * @param auth0UserId

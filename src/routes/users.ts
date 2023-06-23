@@ -41,7 +41,7 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
     return res.send(user);
   }
 
-    try {
+  try {
     // get user e-mail if exists
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -50,7 +50,18 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
       return res.sendStatus(503);
     }
 
-    // create new user
+    // for migration - only in commercial version - check if there is a user with same email without auth0UserId
+    if(Constants.isCommercialVersion) {
+      const userByEmail = await databaseService.getMigratedUser(userInfo.body.email);
+      if (userByEmail) {
+        userByEmail.auth0UserId = auth0UserId;
+        // update auth0UserId
+        await databaseService.updateUser(userByEmail._id, userByEmail);
+        return res.send(userByEmail);
+      }
+    }
+
+    // else create new user
     const newUser = await databaseService.createUser(auth0UserId, userInfo.body.email);
 
     if (Constants.isCommercialVersion && newUser && newUser._id) {
@@ -125,7 +136,7 @@ router.patch('/', authCommons.checkJwt, async (req, res) => {
 
     // Update connections in core service
     const userConnections = await databaseService.getConnectionsByUserId(user._id);
-    if(!userConnections) {
+    if (!userConnections) {
       return res.status(503).send('Error while getting user connections');
     }
 
@@ -153,7 +164,7 @@ router.post('/changePassword', authCommons.checkJwt, async (req, res) => {
     return res.sendStatus(401);
   }
 
-  if(!req.params.auth0UserId.startsWith('auth0|')) {
+  if (!req.params.auth0UserId.startsWith('auth0|')) {
     return res.status(400).send('Unable to change password for user using social login.');
   }
 
@@ -164,7 +175,7 @@ router.post('/changePassword', authCommons.checkJwt, async (req, res) => {
   };
 
   let response;
-  try{
+  try {
     response = await management.createPasswordChangeTicket(data);
   } catch (ex) {
     return res.status(503).send('Error while creating password change ticket');
