@@ -219,6 +219,14 @@ export class DatabaseService {
     return result.value;
   }
 
+  /**
+   * Create stripe subscription. It means update membership info's stripe subscription id, current membership, current membership finishes and current connections
+   * @param stripeCustomerId
+   * @param stripeSubscriptionId
+   * @param currentMembership
+   * @param currentMembershipFinishes
+   * @param currentConnections
+   */
   async createMembershipInfoStripeSubscription(stripeCustomerId: string, stripeSubscriptionId: string, currentMembership: string, currentMembershipFinishes: number, currentConnections: number): Promise<MembershipInfo | undefined | null> {
     if (!this._membershipInfoCollection) return null;
 
@@ -236,7 +244,8 @@ export class DatabaseService {
   }
 
   /**
-   * TODO return old membership info
+   * Update membership info's current membership, current membership finishes and current connections
+   * Returns old membership info
    * @param stripeCustomerId
    * @param stripeSubscriptionId
    * @param currentMembership
@@ -259,7 +268,8 @@ export class DatabaseService {
   }
 
   /**
-   * TODO return old membership info
+   * Delete stripe subscription. It means set stripeSubscriptionId, currentMembership, currentMembershipFinishes and currentConnections to null or 0
+   * Returns old membership info
    * @param stripeCustomerId
    * @param stripeSubscriptionId
    */
@@ -353,14 +363,27 @@ export class DatabaseService {
     return result.value;
   }
 
+  /**
+   * Increment user's membership info's current active connections by 1
+   * @param userId
+   */
   async addActiveConnection(userId: ObjectId): Promise<boolean | null> {
     return await this.incrementActiveConnectionByAmount(userId, 1);
   }
 
+  /**
+   * Decrement user's membership info's current active connections by 1
+   * @param userId
+   */
   async removeActiveConnection(userId: ObjectId): Promise<boolean | null> {
     return await this.incrementActiveConnectionByAmount(userId, -1);
   }
 
+  /**
+   * Increment user's membership info's current active connections by amount
+   * @param userId
+   * @param amount
+   */
   async incrementActiveConnectionByAmount(userId: ObjectId, amount: number): Promise<boolean | null> {
     if (!this._membershipInfoCollection) return null;
 
@@ -419,6 +442,10 @@ export class DatabaseService {
 
   }
 
+  /**
+   * Get connections that are not marked to be deleted. It means it has not null deleteTimestamp
+   * @param userId
+   */
   async getNotMarkedToDeleteConnectionsByUserId(userId: ObjectId): Promise<Connection[]> {
     if (!this._connectionsCollection) return [];
 

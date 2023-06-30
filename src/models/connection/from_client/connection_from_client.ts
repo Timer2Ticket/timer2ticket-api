@@ -77,11 +77,11 @@ export class ConnectionFromClient {
     }
 
     if (tool.tool === ToolType.REDMINE.name) {
-      return await this.validateRedmine(tool, 'Second tool', errors);
+      return await this.validateRedmine(tool, errorPrefix, errors);
     } else if (tool.tool === ToolType.JIRA.name) {
-      return await this.validateJira(tool, 'Second tool', errors);
+      return await this.validateJira(tool, errorPrefix, errors);
     } else if (tool.tool === ToolType.TOGGL_TRACK.name) {
-      return await this.validateTogglTrack(tool, 'Second tool', errors);
+      return await this.validateTogglTrack(tool, errorPrefix, errors);
     } else {
       errors.push(`${errorPrefix} has invalid tool property`);
       return false;

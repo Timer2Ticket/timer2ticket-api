@@ -48,4 +48,49 @@ describe('SyncedService', () => {
       expect(service.config.workspace?.name).to.equal('Workspace 2');
     });
   });
+  describe('getSyncServiceName', () => {
+    it('should return the workspace name for Toggl Track', () => {
+
+      const syncedService = new SyncedService({
+        tool: ToolType.TOGGL_TRACK.name,
+        togglTrackApiKey: 'api-key',
+        selectedTogglTrackWorkspace: 'workspace-id',
+        selectedTogglTrackWorkspaceName: 'Workspace A',
+      });
+
+      const serviceName = SyncedService.getSyncServiceName(syncedService);
+
+      expect(serviceName).to.equal('Workspace A');
+    });
+
+    it('should return the API point for Redmine', () => {
+      const syncedService = new SyncedService({
+        tool: ToolType.REDMINE.name,
+        redmineApiKey: 'api-key',
+        redmineApiPoint: 'https://redmine.example.com',
+        selectedRedmineDefaultTimeEntryActivity: 333,
+        selectedRedmineDefaultTimeEntryActivityName: 'TestName',
+      });
+
+      const serviceName = SyncedService.getSyncServiceName(syncedService);
+
+      expect(serviceName).to.equal('https://redmine.example.com');
+    });
+
+    it('should throw an error for unknown sync service name', () => {
+      const syncedService = new SyncedService({
+        tool: 'Unknown Tool',
+      });
+
+      expect(() => SyncedService.getSyncServiceName(syncedService)).to.throw('Unknown sync service name');
+    });
+
+    it('should throw an error for Jira (not implemented)', () => {
+      const syncedService = new SyncedService({
+        tool: ToolType.JIRA.name,
+      });
+
+      expect(() => SyncedService.getSyncServiceName(syncedService)).to.throw('Not implemented');
+    });
+  });
 });
