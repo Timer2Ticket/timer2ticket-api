@@ -6,7 +6,6 @@ import { translateService } from './shared/translate_service';
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 const usersRoutes = require('./routes/users');
-const membershipRoutes = require('./routes/membership');
 const connectionRoutes = require('./routes/connections');
 const syncedServicesConfigRoutes = require('./routes/synced_services_config');
 const jobLogsRoutes = require('./routes/job_logs');
@@ -17,13 +16,14 @@ if (Constants.isCommercialVersion) {
   const stripeRoutes = require('./routes/commercial/stripe');
   const stripePublicRoutes = require('./routes/commercial/stripe_webhook');
   const syncLogsRoutes = require('./routes/commercial/sync_logs');
+  const membershipRoutes = require('./routes/commercial/membership');
 
   app.use('/api/v2/users/:auth0UserId/stripe', stripeRoutes);
   app.use('/api/v2/stripe', stripePublicRoutes);
   app.use('/api/v2/users/:auth0UserId/syncLogs', syncLogsRoutes);
+  app.use('/api/v2/users/:auth0UserId/membership', membershipRoutes);
 }
 
-app.use('/api/v2/users/:auth0UserId/membership', membershipRoutes);
 app.use('/api/v2/users/:auth0UserId/connections', connectionRoutes);
 app.use('/api/v2/users/:auth0UserId/jobLogs', jobLogsRoutes);
 

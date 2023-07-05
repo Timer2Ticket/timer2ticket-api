@@ -1,7 +1,7 @@
 import express from 'express';
-import { authCommons } from '../shared/auth_commons';
-import { Constants } from '../shared/constants';
-import { databaseService } from '../shared/database_service';
+import { authCommons } from '../../shared/auth_commons';
+import { Constants } from '../../shared/constants';
+import { databaseService } from '../../shared/database_service';
 
 const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));

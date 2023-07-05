@@ -1,0 +1,895 @@
+{
+	"info": {
+		"_postman_id": "aee4e350-3862-40f3-9b7a-109553033063",
+		"name": "T2T API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Commercial",
+			"item": [
+				{
+					"name": "Membership",
+					"item": [
+						{
+							"name": "Get user's membership info",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Stripe",
+					"item": [
+						{
+							"name": "Get link to buy membership",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Hobby\",\r\n    \"connectionsOver\": 0\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/membership",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"membership"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get link to buy immediate syncs",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"quantity\": 40\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/buyImmediateSyncs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"buyImmediateSyncs"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get customer portal link",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									},
+									{
+										"key": "Origin",
+										"value": "http://localhost:8081",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Hobby\",\r\n    \"connectionsOver\": 0\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/stripe/customerPortal",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"stripe",
+										"customerPortal"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Stripe webhook",
+					"item": [
+						{
+							"name": "Send webhook",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:3001/api/v2/stripe/webhook",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"stripe",
+										"webhook"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Sync logs",
+					"item": [
+						{
+							"name": "Get user's sync logs",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "{{accessToken}}",
+										"type": "default"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/syncLogs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "3001",
+									"path": [
+										"api",
+										"v2",
+										"users",
+										"{{auth0UserId}}",
+										"syncLogs"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Connection",
+			"item": [
+				{
+					"name": "Create new connection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": true,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            0,\r\n            1\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get user's connections",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get connection",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"configSyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"timeEntrySyncJobDefinition\": {\r\n        \"everyHour\": false,\r\n        \"selectionOfDays\": [\r\n            1,\r\n            2\r\n        ],\r\n        \"syncTime\": \"02:00\"\r\n    },\r\n    \"firstTool\": {\r\n        \"userId\": {{togglTrackUserId}},\r\n        \"tool\": \"Toggl Track\",\r\n        \"togglTrackApiKey\": \"{{togglTrackApiKey}}\",\r\n        \"selectedTogglTrackWorkspace\": {{selectedTogglTrackWorkspace}},\r\n        \"selectedTogglTrackWorkspaceName\": \"{{selectedTogglTrackWorkspaceName}}\"\r\n    },\r\n    \"secondTool\": {\r\n        \"userId\": {{redmineUserId}},\r\n        \"tool\": \"Redmine\",\r\n        \"redmineApiKey\": \"{{redmineApiKey}}\",\r\n        \"redmineApiPoint\": \"{{redmineApiPoint}}\",\r\n        \"selectedRedmineDefaultTimeEntryActivity\": {{selectedRedmineDefaultTimeEntryActivity}},\r\n        \"selectedRedmineDefaultTimeEntryActivityName\": \"{{selectedRedmineDefaultTimeEntryActivityName}}\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update connection using patch",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"isActive\": true,\r\n\t\"configSyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t0, 1\r\n\t\t],\r\n\t\t\"syncTime\": \"06:39\"\r\n\t},\r\n\t\"timeEntrySyncJobDefinition\": {\r\n\t\t\"everyHour\": false,\r\n\t\t\"selectionOfDays\": [\r\n\t\t\t1, 2\r\n\t\t],\r\n\t\t\"syncTime\": \"23:44\"\r\n\t}\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete connection",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjVRVXVtcXc5dmVlVWhVaXhWVDJScCJ9.eyJpc3MiOiJodHRwczovL2Rldi02aXllemdocXM0NDR0MXdmLnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJmYWNlYm9va3w2MDU2OTIzMjAxMDQxNTAyIiwiYXVkIjpbImh0dHBzOi8vYXV0aDAudGltZXIydGlja2V0LmNvbSIsImh0dHBzOi8vZGV2LTZpeWV6Z2hxczQ0NHQxd2YudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY4MzczODkxNiwiZXhwIjoxNjgzODI1MzE2LCJhenAiOiJ3c2tBNFNrQnB5ZE0zNXV2VmhEdFRzdkkwTGhIeDQ2bSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.vt2RGybcoxxTIRqbLsPuuwKlrg5Mwd81RW39mIwojjAbXzRwGYUfvdtzf7Zl4746HHQKEv6_zDD64oEwws-ZtsbbD3_asn8IOdz5z0oNktjF55J_uRf6qh76IO6zlPA3QmBzGp5pe76Z2qzpD5a_O6QnGPVnxv5kLCAJW9NfKdnnRki0SFjfHgaSR-O1ciWBt_i4b5K7gFYs3ZvM8iNSslzzjZH5YAx0kRoVR9HX3DZ6AQ7lGle6DOh8x0HEd3jw7t5ZLS_YM23bmuwHpGVWnjW0by66qgvNURoM1c7IfjGSI2cnYKigvWMx7E9SYADfyOE_zRua-mDfxl36AYhZ1A",
+								"type": "default",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Restore deletion",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/restore",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"restore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync config objects",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncConfigObjects",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncConfigObjects"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync time entries",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/connections/{{connectionId}}/syncTimeEntries",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"connections",
+								"{{connectionId}}",
+								"syncTimeEntries"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "JobLogs",
+			"item": [
+				{
+					"name": "Get user's job logs",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/jobLogs",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"jobLogs"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Synced services config",
+			"item": [
+				{
+					"name": "Get redmine time entry activities",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/redmine_time_entry_activities?api_key={{redmineApiKey}}&api_point={{redmineApiPoint}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"redmine_time_entry_activities"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{redmineApiKey}}"
+								},
+								{
+									"key": "api_point",
+									"value": "{{redmineApiPoint}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get toggl track workspaces",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/synced_services_config/toggl_track_workspaces?api_key={{togglTrackApiKey}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"synced_services_config",
+								"toggl_track_workspaces"
+							],
+							"query": [
+								{
+									"key": "api_key",
+									"value": "{{togglTrackApiKey}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Get user",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"membershipName\":\"Junior\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Patch user",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"timeZone\": \"Europe/Prague\",\r\n    \"email\": \"test@email.cz\",\r\n    \"syncProblemsInfo\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{accessToken}}",
+								"type": "default"
+							},
+							{
+								"key": "Origin",
+								"value": "http://localhost:8081",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:3001/api/v2/users/{{auth0UserId}}/changePassword",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3001",
+							"path": [
+								"api",
+								"v2",
+								"users",
+								"{{auth0UserId}}",
+								"changePassword"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
