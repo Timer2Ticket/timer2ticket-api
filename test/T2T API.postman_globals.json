@@ -1,0 +1,81 @@
+{
+	"id": "146e52f0-fd32-4814-8e58-8a3c0f4d5eb7",
+	"values": [
+		{
+			"key": "connectionId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "auth0UserId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "togglTrackApiKey",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedTogglTrackWorkspace",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedTogglTrackWorkspaceName",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "togglTrackUserId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "redmineApiKey",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "redmineApiPoint",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedRedmineDefaultTimeEntryActivity",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "selectedRedmineDefaultTimeEntryActivityName",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "redmineUserId",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"name": "T2T API env",
+	"_postman_variable_scope": "globals",
+	"_postman_exported_at": "2023-07-05T14:42:13.236Z",
+	"_postman_exported_using": "Postman/10.15.0"
+}
