@@ -1,4 +1,5 @@
 import { ServiceConfig } from './service_config';
+import { ToolType } from '../../../enums/tools/type_of_tool';
 
 export class SyncedService {
 
@@ -13,11 +14,11 @@ export class SyncedService {
   }
 
   static getSyncServiceName(syncedService: SyncedService): string {
-    if(syncedService.name === 'Toggl Track') {
+    if(syncedService.name === ToolType.TOGGL_TRACK.name) {
       return syncedService.config.workspace!.name;
-    } else if (syncedService.name === 'Redmine') {
+    } else if (syncedService.name === ToolType.REDMINE.name) {
       return syncedService.config.apiPoint!;
-    } else if (syncedService.name === 'Jira') {
+    } else if (syncedService.name === ToolType.JIRA.name) {
       throw new Error('Not implemented');
     } else {
       throw new Error('Unknown sync service name');
