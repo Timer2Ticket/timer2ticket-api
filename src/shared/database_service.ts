@@ -367,8 +367,14 @@ export class DatabaseService {
    * Increment user's membership info's current active connections by 1
    * @param userId
    */
+
   async addActiveConnection(userId: ObjectId): Promise<boolean | null> {
-    return await this.incrementActiveConnectionByAmount(userId, 1);
+    if (!this._membershipInfoCollection) return null;
+
+    const filterQuery = { userId: userId, $expr: { $lt: ['$currentActiveConnections', '$currentConnections'] } };
+    const result = await this._membershipInfoCollection.findOneAndUpdate(filterQuery, { $inc: { currentActiveConnections: 1 } });
+
+    return result.value !== null;
   }
 
   /**

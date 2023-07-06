@@ -27,7 +27,7 @@ router.use((req, res, next) => {
   res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
 
   if (!Constants.isCommercialVersion) {
-    return res.sendStatus(403);
+    return res.sendStatus(404);
   } else {
     next();
   }
@@ -223,14 +223,14 @@ async function reconfigureConnections(oldMembershipInfo: MembershipInfo, newMemb
 
   if (modifiedConnectionsIds.length > 0) {
     // no need to wait
-    sendNotifycationEmail(userId, deactivatedConnections, changedConfigConnections);
+    sendNotificationEmail(userId, deactivatedConnections, changedConfigConnections);
 
     // no need to wait
     coreService.updateConnections(modifiedConnectionsIds);
   }
 }
 
-async function sendNotifycationEmail(userId: ObjectId, deactivatedConnections: string[], changedConfigConnections: string[]) {
+async function sendNotificationEmail(userId: ObjectId, deactivatedConnections: string[], changedConfigConnections: string[]) {
   const user = await databaseService.getUserById(userId);
   if (!user || !user.email) {
     return;

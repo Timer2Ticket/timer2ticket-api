@@ -90,8 +90,8 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
   let isActive = true;
 
   if (Constants.isCommercialVersion) {
-    const removeActiveConnectionResult = await databaseService.addActiveConnection(user._id);
-    if (!removeActiveConnectionResult) {
+    const addActiveConnectionResult = await databaseService.addActiveConnection(user._id);
+    if (!addActiveConnectionResult) {
       isActive = false;
     }
   }

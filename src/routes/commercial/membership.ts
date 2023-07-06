@@ -18,7 +18,7 @@ router.use((req, res, next) => {
   res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
 
   if (!Constants.isCommercialVersion) {
-    return res.sendStatus(403);
+    return res.sendStatus(404);
   } else {
     next();
   }
