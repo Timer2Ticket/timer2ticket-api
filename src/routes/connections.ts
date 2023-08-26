@@ -155,16 +155,16 @@ router.get('/:connectionId', authCommons.checkJwt, async (req, res) => {
   try {
     objectId = new ObjectId(connectionId);
   } catch (error) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   if (!connection.userId.equals(user._id)) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   return res.status(200).send(connection);
@@ -399,24 +399,24 @@ router.delete('/:connectionId', authCommons.checkJwt, async (req, res) => {
   // get current user
   const user: User | null = await getUserFromDatabase(auth0UserId);
   if (!user) {
-    return res.status(503).send('Error getting user');
+    return res.status(400).send('Error getting user');
   }
 
   let objectId;
   try {
     objectId = new ObjectId(connectionId);
   } catch (error) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   // get current connection
   const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   if (!connection.userId.equals(user._id)) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   if (Constants.isCommercialVersion && connection.isActive) {
@@ -457,24 +457,24 @@ router.post('/:connectionId/restore', authCommons.checkJwt, async (req, res) => 
   // get current user
   const user: User | null = await getUserFromDatabase(auth0UserId);
   if (!user) {
-    return res.status(503).send('Error getting user');
+    return res.status(400).send('Error getting user');
   }
 
   let objectId;
   try {
     objectId = new ObjectId(connectionId);
   } catch (error) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   // get current connection
   const connection: Connection | null = await databaseService.getConnectionById(objectId);
   if (!connection) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   if (!connection.userId.equals(user._id)) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   // unmark to delete
@@ -506,20 +506,20 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
   // get current user
   const user: User | null = await getUserFromDatabase(auth0UserId);
   if (!user) {
-    return res.status(503).send('Error getting user');
+    return res.status(400).send('Error getting user');
   }
 
   let objectId;
   try {
     objectId = new ObjectId(connectionId);
   } catch (error) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   // get current connection
   const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   if (!connection.isActive) {
@@ -527,7 +527,7 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
   }
 
   if (!connection.userId.equals(user._id)) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   if (connection.configSyncJobDefinition.status === 'IN_PROGRESS') {
@@ -589,20 +589,20 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   // get current user
   const user: User | null = await getUserFromDatabase(auth0UserId);
   if (!user) {
-    return res.status(503).send('Error getting user');
+    return res.status(400).send('Error getting user');
   }
 
   let objectId;
   try {
     objectId = new ObjectId(connectionId);
   } catch (error) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   // get current connection
   const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
   if (!connection.isActive) {
@@ -610,7 +610,7 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   }
 
   if (!connection.userId.equals(user._id)) {
-    return res.status(503).send('Error getting connection');
+    return res.status(400).send('Error getting connection');
   }
 
 
