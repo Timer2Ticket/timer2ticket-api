@@ -1,0 +1,16 @@
+{
+    "all": true,
+    "include": [
+        "src"
+    ],
+    "reporter": [
+        "html",
+        "text",
+        "text-summary"
+    ],
+    "extension": [
+        ".ts",
+        ".tsx"
+    ],
+    "require": ["ts-node/register"]
+}

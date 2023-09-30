@@ -7,7 +7,8 @@
     "start": "tsc-watch --project . --outDir ./dist --onSuccess \"nodemon ./dist/src/app.js\"",
     "start-fast": "npm run build && node ./dist/src/app.js",
     "test": "mocha -r ts-node/register './test/**/*.spec.ts'",
-    "build": "tsc --build"
+    "build": "tsc --build",
+    "coverage": "nyc npm run test"
   },
   "author": "",
   "license": "ISC",
@@ -41,6 +42,7 @@
     "typescript": "^4.2.2"
   },
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/mocha": "^10.0.1",
     "@types/node": "^20.2.5",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
