@@ -18,7 +18,7 @@ router.use(express.json());
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let t2tLib: any;
 if (Constants.isCommercialVersion) {
-  t2tLib = require('timer2ticket-backend-library');
+  t2tLib = require('@timer2ticket/timer2ticket-backend-library');
 }
 
 // middleware that is specific to this router

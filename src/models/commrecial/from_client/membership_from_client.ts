@@ -1,7 +1,7 @@
 import { IsIn, IsNumber, Max, Min } from 'class-validator';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const t2tLib = require('timer2ticket-backend-library');
+const t2tLib = require('@timer2ticket/timer2ticket-backend-library');
 
 export class MembershipFromClient{
   // Membership name: Hobby, Junior, Senior

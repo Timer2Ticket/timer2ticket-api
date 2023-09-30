@@ -11,7 +11,7 @@ import { coreService } from '../../shared/core_service';
 const router = express.Router({ mergeParams: true });
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const t2tLib = require('timer2ticket-backend-library');
+const t2tLib = require('@timer2ticket/timer2ticket-backend-library');
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const bodyParser = require('body-parser');
