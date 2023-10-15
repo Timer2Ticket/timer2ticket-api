@@ -10,8 +10,7 @@ export class Constants {
   static mongoDbUrl = process.env.MONGODB_URL || 'mongodb://localhost:27017';
   static dbName = process.env.DB_NAME || 'timer2ticketDB';
 
-
-  static isCommercialVersion: boolean = (process.env.IS_COMMERCIAL_VERSION === 'true');
+  static isCommercialVersion: boolean = Constants.getBooleanValue(process.env.IS_COMMERCIAL_VERSION);
 
   static emailHost = process.env.EMAIL_HOST || '';
   static emailUsername = process.env.EMAIL_USERNAME || '';
@@ -22,4 +21,16 @@ export class Constants {
   static authManagementDomain = process.env.AUTH0_MANAGEMENT_DOMAIN;
   static authManagementClientId = process.env.AUTH0_MANAGEMENT_CLIENT_ID;
   static authManagementClientSecret = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET;
+
+  private static getBooleanValue(value: string | boolean | null | undefined): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      return value === 'true';
+    }
+
+    return false;
+  }
 }
