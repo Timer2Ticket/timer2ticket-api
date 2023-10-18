@@ -32,6 +32,9 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
     needs: run-npm-build
     steps:
     - 
@@ -53,9 +56,10 @@ jobs:
       name: Build container image
       uses: docker/build-push-action@v3
       with:
+        context: .
         push: true
         tags: |
           ghcr.io/timer2ticket/timer2ticket-api/timer2ticket-api:${{ env.RELEASE_VERSION }}
         secrets: |
-          NPM_token=${{ secrets.GITHUB_TOKEN }}       
+          "github_token=${{ secrets.GITHUB_TOKEN }}"    
 

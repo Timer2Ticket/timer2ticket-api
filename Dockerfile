@@ -1,15 +1,16 @@
 FROM node:14-alpine as builder
 
-RUN --mount=type=secret,id=NPM_TOKEN export NPM_TOKEN=$(cat /run/secrets/NPM_TOKEN)
+RUN --mount=type=secret,id=github_token \
+    NPM_TOKEN=$(cat /run/secrets/github_token)
 
 RUN echo @timer2ticket:registry=https://npm.pkg.github.com/ >> ~/.npmrc
-RUN echo //npm.pkg.github.com/:_authToken=$NPM_TOKEN >> ~/.npmrc
+RUN echo //npm.pkg.github.com/:_authToken=${NPM_TOKEN} >> ~/.npmrc
+
+WORKDIR /app
 
 COPY package*.json /app
 
 RUN npm ci
-
-WORKDIR /app
 
 COPY . /app
 
