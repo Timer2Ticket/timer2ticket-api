@@ -3,19 +3,32 @@ on:
   push:
     tags:
       - v*
+    branches:
+      - DP-paulmar1
 jobs:
   run-npm-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - name: npm install and build webpack
-        run: |
-          npm install
+        uses: actions/setup-node@v3
+        with:
+          registry-url: 'https://npm.pkg.github.com'
+          node-version: '14.x'
+          always-auth: 'true'
+          scope: '@timer2ticket'
+      - run: |
+          npm ci
           npm run build
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
       - uses: actions/upload-artifact@main
         with:
           name: webpack artifacts
-          path: dist/src/
+          path: dist/src
 
   build-and-push-image:
     runs-on: ubuntu-latest
@@ -43,3 +56,6 @@ jobs:
         push: true
         tags: |
           ghcr.io/timer2ticket/timer2ticket-api/timer2ticket-api:${{ env.RELEASE_VERSION }}
+        secrets: |
+          NPM_token=${{ secrets.GITHUB_TOKEN }}       
+
