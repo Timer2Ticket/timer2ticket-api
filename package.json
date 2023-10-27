@@ -1,6 +1,6 @@
 {
   "name": "timer2ticket_api",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "description": "User service middleware for T2T applications.",
   "main": "dist/src/app.js",
   "scripts": {
@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sentry/node": "^7.76.0",
     "@types/bcrypt": "^3.0.0",
     "@types/chai": "^4.2.15",
     "@types/cors": "^2.8.10",
