@@ -2,6 +2,12 @@ import express from 'express';
 import { databaseService } from './shared/database_service';
 import { translateService } from './shared/translate_service';
 import { Constants } from './shared/constants';
+import * as Sentry from '@sentry/node';
+
+Sentry.init({
+  dsn: Constants.sentryDsn,
+  tracesSampleRate: 0.5,
+});
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const registrationRoutes = require('./routes/registration');
