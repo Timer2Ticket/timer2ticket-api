@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sentry/node": "^7.76.0",
     "@timer2ticket/timer2ticket-backend-library": "^1.0.0",
     "@types/bcrypt": "^3.0.0",
     "@types/chai": "^4.2.15",

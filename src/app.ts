@@ -2,7 +2,12 @@ import express from 'express';
 import { databaseService } from './shared/database_service';
 import { Constants } from './shared/constants';
 import { translateService } from './shared/translate_service';
+import * as Sentry from '@sentry/node';
 
+Sentry.init({
+  dsn: Constants.sentryDsn,
+  tracesSampleRate: 0.5,
+});
 /* eslint-disable @typescript-eslint/no-var-requires */
 
 const usersRoutes = require('./routes/users');
