@@ -14,7 +14,6 @@
   "license": "ISC",
   "dependencies": {
     "@sentry/node": "^7.76.0",
-    "@timer2ticket/timer2ticket-backend-library": "^1.0.0",
     "@types/bcrypt": "^3.0.0",
     "@types/chai": "^4.2.15",
     "@types/cors": "^2.8.10",
@@ -29,18 +28,19 @@
     "bcrypt": "^5.0.1",
     "body-parser": "^1.20.2",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.13.1",
+    "class-validator": "^0.14.0",
     "dotenv": "^16.1.4",
     "express": "^4.17.1",
-    "express-oauth2-jwt-bearer": "^1.4.1",
-    "jsonwebtoken": "^8.5.1",
+    "express-oauth2-jwt-bearer": "^1.6.0",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^3.6.4",
     "node-cron": "^3.0.0",
     "nodemailer": "^6.7.0",
-    "nodemon": "^2.0.22",
+    "nodemon": "^3.0.1",
     "superagent": "^6.1.0",
     "ts-node": "^9.1.1",
-    "typescript": "^4.2.2"
+    "typescript": "^4.2.2",
+    "@timer2ticket/timer2ticket-backend-library": "^1.0.0"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
@@ -50,7 +50,7 @@
     "@typescript-eslint/parser": "^4.16.1",
     "chai": "^4.3.7",
     "eslint": "^7.21.0",
-    "mocha": "^8.3.2",
+    "mocha": "^10.2.0",
     "sinon": "^15.2.0",
     "tsc-watch": "^4.2.9"
   }
