@@ -2,6 +2,7 @@ import { IsObject, ValidateNested } from 'class-validator';
 import superagent from 'superagent';
 import { ToolType } from '../../../enums/tools/type_of_tool';
 import {
+  checkJiraConnection,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail, getTogglTrackUser,
   getTogglTrackWorkspaces,
@@ -16,11 +17,11 @@ export class ConnectionFromClient {
   timeEntrySyncJobDefinition!: SyncJobDefinitionFromClient;
 
   @IsObject()
-    // eslint-disable-next-line
+  // eslint-disable-next-line
   firstTool!: any;
 
   @IsObject()
-    // eslint-disable-next-line
+  // eslint-disable-next-line
   secondTool!: any;
 
   // eslint-disable-next-line
@@ -91,11 +92,11 @@ export class ConnectionFromClient {
   // eslint-disable-next-line
   private async validateRedmine(tool: any, errorPrefix: string, errors: string[]): Promise<boolean> {
     ToolType.REDMINE.attributesFromClient.forEach((attribute) => {
-        if (!tool[attribute]) {
-          errors.push(`${errorPrefix} is missing ${attribute}`);
-          return false;
-        }
-      },
+      if (!tool[attribute]) {
+        errors.push(`${errorPrefix} is missing ${attribute}`);
+        return false;
+      }
+    },
     );
     const userId: string = tool.userId;
     const redmineApiKey: string = tool.redmineApiKey;
@@ -112,10 +113,10 @@ export class ConnectionFromClient {
     let foundRedmineDefaultTimeEntryActivity = null;
     // eslint-disable-next-line
     responseTimeEntryActivities.body.time_entry_activities.forEach((timeEntryActivity: any) => {
-        if (timeEntryActivity.id === selectedRedmineDefaultTimeEntryActivity && timeEntryActivity.name === selectedRedmineDefaultTimeEntryActivityName) {
-          foundRedmineDefaultTimeEntryActivity = timeEntryActivity;
-        }
-      },
+      if (timeEntryActivity.id === selectedRedmineDefaultTimeEntryActivity && timeEntryActivity.name === selectedRedmineDefaultTimeEntryActivityName) {
+        foundRedmineDefaultTimeEntryActivity = timeEntryActivity;
+      }
+    },
     );
 
     if (!foundRedmineDefaultTimeEntryActivity) {
@@ -140,18 +141,34 @@ export class ConnectionFromClient {
 
   // eslint-disable-next-line
   private async validateJira(tool: any, errorPrefix: string, errors: string[]): Promise<boolean> {
-    // TODO Implement
+    ToolType.JIRA.attributesFromClient.forEach((attribute) => {
+      if (!tool[attribute]) {
+        errors.push(`${errorPrefix} is missing ${attribute}`);
+        return false;
+      }
+    })
+    const jiraApiKey: string = tool.jiraApiKey
+    const jiraUserEmail: string = tool.jiraUserEmail
+    const jiraDomain: string = tool.jiraDomain
+
+    //TODO can be done better
+    const jiraConnection: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail)
+    if (typeof jiraConnection === 'number') {
+      errors.push(`Invalid Jira ApiKey, domain or user email`)
+      return false
+    }
+
     return true;
   }
 
   // eslint-disable-next-line
   private async validateTogglTrack(tool: any, errorPrefix: string, errors: string[]): Promise<boolean> {
     ToolType.TOGGL_TRACK.attributesFromClient.forEach((attribute) => {
-        if (!tool[attribute]) {
-          errors.push(`${errorPrefix} is missing ${attribute}`);
-          return false;
-        }
-      },
+      if (!tool[attribute]) {
+        errors.push(`${errorPrefix} is missing ${attribute}`);
+        return false;
+      }
+    },
     );
     const userId: string = tool.userId;
     const togglTrackApiKey: string = tool.togglTrackApiKey;
@@ -167,10 +184,10 @@ export class ConnectionFromClient {
     let foundTogglTrackWorkspace = null;
     // eslint-disable-next-line
     responseWorkspaces.body.forEach((workspace: any) => {
-        if (workspace.id === selectedTogglTrackWorkspace && workspace.name === selectedTogglTrackWorkspaceName) {
-          foundTogglTrackWorkspace = workspace;
-        }
-      },
+      if (workspace.id === selectedTogglTrackWorkspace && workspace.name === selectedTogglTrackWorkspaceName) {
+        foundTogglTrackWorkspace = workspace;
+      }
+    },
     );
 
     if (!foundTogglTrackWorkspace) {

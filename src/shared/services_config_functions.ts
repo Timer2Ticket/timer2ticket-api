@@ -5,7 +5,7 @@ export async function getTogglTrackUser(togglTrackApiKey: string): Promise<super
     responseMe = await superagent
       .get('https://api.track.toggl.com/api/v9/me')
       .auth(togglTrackApiKey, 'api_token');
-  } catch (err) {
+  } catch (err: any) {
     return err.status;
   }
   return responseMe;
@@ -17,7 +17,7 @@ export async function getTogglTrackWorkspaces(togglTrackApiKey: string): Promise
     responseWorkspaces = await superagent
       .get('https://api.track.toggl.com/api/v9/me/workspaces')
       .auth(togglTrackApiKey, 'api_token');
-  } catch (err) {
+  } catch (err: any) {
     return err.status;
   }
   return responseWorkspaces;
@@ -40,7 +40,7 @@ export async function getRedmineTimeEntryActivities(redmineApiPoint: string, red
       .accept('application/json')
       .type('application/json')
       .set('X-Redmine-API-Key', redmineApiKey);
-  } catch (err) {
+  } catch (err: any) {
     return err.status;
   }
   return responseTimeEntryActivities;
@@ -63,9 +63,35 @@ export async function getRedmineUserDetail(redmineApiPoint: string, redmineApiKe
       .accept('application/json')
       .type('application/json')
       .set('X-Redmine-API-Key', redmineApiKey);
-  } catch (err) {
+  } catch (err: any) {
     return err.status;
   }
 
   return responseUserDetail;
+}
+
+
+export async function checkJiraConnection(jiraDomain: string, jiraApiKey: string, jiraUserEmail: string): Promise<superagent.Response | number> {
+  // add last / if not provided by user
+  jiraDomain = jiraDomain.endsWith('/')
+    ? jiraDomain
+    : `${jiraDomain}/`;
+  // add https:// if not provided by user
+  jiraDomain = (jiraDomain.startsWith('https://') || jiraDomain.startsWith('http://'))
+    ? jiraDomain
+    : `https://${jiraDomain}`;
+
+  const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
+
+  let response
+  try {
+    response = await superagent
+      .get(`${jiraDomain}`)
+      .accept('text/html')
+      .set('Autorization', `Basic ${secret}`);
+  } catch (err: any) {
+    return err.status;
+  }
+
+  return response
 }
