@@ -2,6 +2,7 @@ import express from 'express';
 import superagent from 'superagent';
 import { authCommons } from '../shared/auth_commons';
 import {
+  checkJiraConnection,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail,
   getTogglTrackUser,
@@ -57,7 +58,7 @@ router.get('/redmine_time_entry_activities', authCommons.checkJwt, async (req, r
   }
 
   // need to grab userId (determined by api key provided)
-  const  responseUserDetail: superagent.Response | number = await getRedmineUserDetail(redmineApiPoint, redmineApiKey);
+  const responseUserDetail: superagent.Response | number = await getRedmineUserDetail(redmineApiPoint, redmineApiKey);
   if (!responseUserDetail || typeof responseUserDetail === 'number') {
     // on error, response with status from Redmine
     let statusCode = 503;
@@ -117,7 +118,7 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
   }
 
   const responseWorkspaces: superagent.Response | number = await getTogglTrackWorkspaces(togglTrackApiKey);
-  if(!responseWorkspaces || typeof responseWorkspaces === 'number') {
+  if (!responseWorkspaces || typeof responseWorkspaces === 'number') {
     // on error, response with status from Toggl Track
     let statusCode = 503;
     if (responseWorkspaces && responseWorkspaces !== 401) {
@@ -153,5 +154,31 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
     return res.sendStatus(503);
   }
 });
+
+
+/*
+* Checks if the connection to user jira is valid
+* checks by using API Key, domain and user email
+*/
+router.get('/jira_connection_check', authCommons.checkJwt, async (req, res) => {
+  // those 2 are filled by user in the client form
+  const jiraApiKey: string | undefined = req.query['api_key']?.toString();
+  let jiraDomain: string | undefined = req.query['domain']?.toString();
+  let jiraUserEmail: string | undefined = req.query['user_email']?.toString();
+  // should validate too...
+
+  if (jiraApiKey && jiraDomain && jiraUserEmail) {
+    jiraDomain = encodeURI(jiraDomain);
+
+    const jiraResponse: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail);
+    if (!jiraResponse || typeof jiraResponse === 'number') {
+      return res.sendStatus(jiraResponse)
+    } else {
+      //check ok
+      return res.sendStatus(200);
+    }
+  }
+});
+
 
 module.exports = router;

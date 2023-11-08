@@ -1,3 +1,4 @@
+import { text } from 'body-parser';
 import superagent from 'superagent';
 export async function getTogglTrackUser(togglTrackApiKey: string): Promise<superagent.Response | number> {
   let responseMe: superagent.Response;
@@ -83,15 +84,13 @@ export async function checkJiraConnection(jiraDomain: string, jiraApiKey: string
 
   const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
 
-  let response
   try {
-    response = await superagent
+    const response = await superagent
       .get(`${jiraDomain}`)
-      .accept('text/html')
-      .set('Autorization', `Basic ${secret}`);
+      .accept("*/*")
+      .set('Authorization', `Basic ${secret}`);
+    return response
   } catch (err: any) {
     return err.status;
   }
-
-  return response
 }

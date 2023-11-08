@@ -12,17 +12,21 @@ export class ServiceConfig {
 
   // For Redmine
   defaultTimeEntryActivity!: DefaultTimeEntryActivity | null;
-  // For Redmine
+  // For Redmine and Jira (domain)
   apiPoint!: string | null;
   // For Toggl track
   workspace!: Workspace | null;
+  //FOr Jira
+  userEmail!: string | null
 
   // eslint-disable-next-line
   constructor(toolFromUser: any) {
     this.userId = toolFromUser.userId;
 
     if (toolFromUser.tool === ToolType.JIRA.name) {
-      // TODO
+      this.apiKey = toolFromUser.jiraApiKey
+      this.apiPoint = toolFromUser.jiraDomain
+      this.userEmail = toolFromUser.jiraUserEmail
     } else if (toolFromUser.tool === ToolType.REDMINE.name) {
       this.apiKey = toolFromUser.redmineApiKey;
       this.apiPoint = toolFromUser.redmineApiPoint;
