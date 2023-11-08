@@ -172,9 +172,9 @@ router.get('/jira_connection_check', authCommons.checkJwt, async (req, res) => {
 
     const jiraResponse: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail);
     if (!jiraResponse || typeof jiraResponse === 'number') {
-      return res.sendStatus(jiraResponse)
+      return res.sendStatus(jiraResponse ? jiraResponse : 503)
     } else {
-      //check ok
+      //check was ok
       return res.sendStatus(200);
     }
   }
