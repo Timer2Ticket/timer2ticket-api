@@ -151,7 +151,6 @@ export class ConnectionFromClient {
     const jiraUserEmail: string = tool.jiraUserEmail
     const jiraDomain: string = tool.jiraDomain
 
-    //TODO can be done better
     const jiraConnection: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail)
     if (typeof jiraConnection === 'number') {
       errors.push(`Invalid Jira ApiKey, domain or user email`)

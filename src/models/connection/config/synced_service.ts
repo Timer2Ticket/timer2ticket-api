@@ -19,7 +19,7 @@ export class SyncedService {
     } else if (syncedService.name === ToolType.REDMINE.name) {
       return syncedService.config.apiPoint!;
     } else if (syncedService.name === ToolType.JIRA.name) {
-      return syncedService.config.apiPoint!;
+      return syncedService.config.domain!;
     } else {
       throw new Error('Unknown sync service name');
     }

@@ -12,7 +12,7 @@ const ToolType = {
   JIRA: {
     name: "Jira",
     type: "Project",
-    attributesFromClient: ["jiraApiKey", "JiraUserEmail", "jiraDomain"]
+    attributesFromClient: ["jiraApiKey", "jiraUserEmail", "jiraDomain"]
   },
 };
 

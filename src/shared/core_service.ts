@@ -13,7 +13,8 @@ export class CoreService {
     try {
       response = await superagent
         .post(`${Constants.t2tCoreUrl}create/${connectionId}`);
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err)
       return err.status;
     }
     return response;
@@ -27,7 +28,7 @@ export class CoreService {
         .send({
           connectionIds: connectionIds,
         });
-    } catch (err) {
+    } catch (err: any) {
       return err.status;
     }
     return response;
@@ -38,7 +39,7 @@ export class CoreService {
     try {
       response = await superagent
         .post(`${Constants.t2tCoreUrl}schedule_config_job/${jobLogId}`);
-    } catch (err) {
+    } catch (err: any) {
       return err.status;
     }
     return response;
@@ -49,7 +50,7 @@ export class CoreService {
     try {
       response = await superagent
         .post(`${Constants.t2tCoreUrl}schedule_time_entries_job/${jobLogId}`);
-    } catch (err) {
+    } catch (err: any) {
       return err.status;
     }
     return response;
