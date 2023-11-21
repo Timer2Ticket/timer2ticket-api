@@ -37,7 +37,6 @@ router.use((req, res, next) => {
  * Create new connection for user with auth0UserId in parameter.
  */
 router.post('/', authCommons.checkJwt, async (req, res) => {
-  console.log(req.body)
   if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
@@ -99,7 +98,6 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
   }
 
   const connection: Connection = new Connection(user._id, nextId, connectionFromClient, isActive);
-  console.log(connection)
   const result = await databaseService.createConnection(connection);
 
   if (!result) {
