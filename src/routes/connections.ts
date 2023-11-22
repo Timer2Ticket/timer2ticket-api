@@ -130,7 +130,6 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
   if (!connections) {
     return res.status(503).send('Error getting connections');
   }
-
   return res.status(200).send(connections);
 });
 

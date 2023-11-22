@@ -161,12 +161,11 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
 * checks by using API Key, domain and user email
 */
 router.get('/jira_connection_check', authCommons.checkJwt, async (req, res) => {
-  // those 2 are filled by user in the client form
+  // those 3 are filled by user in the client form
   const jiraApiKey: string | undefined = req.query['api_key']?.toString();
   let jiraDomain: string | undefined = req.query['domain']?.toString();
-  let jiraUserEmail: string | undefined = req.query['user_email']?.toString();
+  const jiraUserEmail: string | undefined = req.query['user_email']?.toString();
   // should validate too...
-
   if (jiraApiKey && jiraDomain && jiraUserEmail) {
     jiraDomain = encodeURI(jiraDomain);
 
@@ -177,7 +176,10 @@ router.get('/jira_connection_check', authCommons.checkJwt, async (req, res) => {
       //check was ok
       return res.sendStatus(200);
     }
+  } else {
+    return res.sendStatus(400)
   }
+
 });
 
 
