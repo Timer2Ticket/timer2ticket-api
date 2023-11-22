@@ -2,12 +2,13 @@ import express from 'express';
 import superagent from 'superagent';
 import { authCommons } from '../shared/auth_commons';
 import {
-  checkJiraConnection,
+  getJiraIssueStatuses,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail,
   getTogglTrackUser,
   getTogglTrackWorkspaces,
 } from '../shared/services_config_functions';
+import { stat } from 'fs';
 
 
 const router = express.Router();
@@ -160,7 +161,7 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
 * Checks if the connection to user jira is valid
 * checks by using API Key, domain and user email
 */
-router.get('/jira_issue_types', authCommons.checkJwt, async (req, res) => {
+router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
   // those 3 are filled by user in the client form
   const jiraApiKey: string | undefined = req.query['api_key']?.toString();
   let jiraDomain: string | undefined = req.query['domain']?.toString();
@@ -169,12 +170,17 @@ router.get('/jira_issue_types', authCommons.checkJwt, async (req, res) => {
   if (jiraApiKey && jiraDomain && jiraUserEmail) {
     jiraDomain = encodeURI(jiraDomain);
 
-    const jiraResponse: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail);
+    const jiraResponse: superagent.Response | number = await getJiraIssueStatuses(jiraDomain, jiraApiKey, jiraUserEmail);
+    console.log(jiraResponse)
     if (!jiraResponse || typeof jiraResponse === 'number') {
       return res.sendStatus(jiraResponse ? jiraResponse : 503)
     } else {
-      //check was ok
-      return res.sendStatus(200);
+      const statuses: string[] = []
+      jiraResponse.body.forEach((status: any) => {
+        statuses.push(status.name)
+      })
+      console.log(statuses)
+      return res.send(statuses);
     }
   } else {
     return res.sendStatus(400)

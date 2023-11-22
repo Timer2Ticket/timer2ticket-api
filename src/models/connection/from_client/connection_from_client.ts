@@ -2,7 +2,7 @@ import { IsObject, ValidateNested } from 'class-validator';
 import superagent from 'superagent';
 import { ToolType } from '../../../enums/tools/type_of_tool';
 import {
-  checkJiraConnection,
+  getJiraIssueStatuses,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail, getTogglTrackUser,
   getTogglTrackWorkspaces,
@@ -151,7 +151,7 @@ export class ConnectionFromClient {
     const jiraUserEmail: string = tool.jiraUserEmail
     const jiraDomain: string = tool.jiraDomain
 
-    const jiraConnection: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail)
+    const jiraConnection: superagent.Response | number = await getJiraIssueStatuses(jiraDomain, jiraApiKey, jiraUserEmail)
     if (typeof jiraConnection === 'number') {
       errors.push(`Invalid Jira ApiKey, domain or user email`)
       return false
