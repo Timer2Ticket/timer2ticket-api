@@ -160,7 +160,7 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
 * Checks if the connection to user jira is valid
 * checks by using API Key, domain and user email
 */
-router.get('/jira_connection_check', authCommons.checkJwt, async (req, res) => {
+router.get('/jira_issue_types', authCommons.checkJwt, async (req, res) => {
   // those 3 are filled by user in the client form
   const jiraApiKey: string | undefined = req.query['api_key']?.toString();
   let jiraDomain: string | undefined = req.query['domain']?.toString();
