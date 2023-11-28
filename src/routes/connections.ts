@@ -172,7 +172,6 @@ router.get('/:connectionId', authCommons.checkJwt, async (req, res) => {
  * Updates user's connection with connectionId.
  */
 router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
-  //console.log(req.body)
   if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
@@ -186,14 +185,12 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(503).send('Error getting user');
   }
 
-  console.log(req.body)
   // validate connection
   const connectionFromClient: ConnectionFromClient = new ConnectionFromClient(req.body);
   if (!connectionFromClient) {
     return res.status(400).send('Incorrect request body');
   }
 
-  //console.log(connectionFromClient)
   // validate connection from client object
   const validationResults = await validate(connectionFromClient);
 

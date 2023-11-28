@@ -171,10 +171,8 @@ export class ConnectionFromClient {
     }
 
     const jiraFallbackIssue: boolean = tool.jiraFallbackIssue
-    console.log(jiraFallbackIssue)
     if (jiraFallbackIssue === true) {
       const jiraFallbackIssueName: string = tool.jiraFallbackIssueName
-      console.log(jiraFallbackIssueName)
       if (jiraFallbackIssueName === '') {
         errors.push(`Name of the fallback Issue is empty and it shouldn\'t be`)
         return false
