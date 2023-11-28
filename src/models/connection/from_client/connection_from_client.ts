@@ -33,6 +33,14 @@ export class ConnectionFromClient {
     } else if (obj.secondTool.tool == ToolType.REDMINE.name) {
       this.checkRedmineUrl(obj.secondTool);
     }
+
+    if (obj.firstTool.tool == ToolType.JIRA.name) {
+      this.checkJiraUrl(obj.firstTool);
+    } else if (obj.secondTool.tool == ToolType.JIRA.name) {
+      this.checkJiraUrl(obj.secondTool);
+    }
+
+
     this.firstTool = obj.firstTool;
     this.secondTool = obj.secondTool;
   }
@@ -41,6 +49,11 @@ export class ConnectionFromClient {
     tool.redmineApiPoint = tool.redmineApiPoint.endsWith('/')
       ? tool.redmineApiPoint
       : `${tool.redmineApiPoint}/`;
+  }
+  private checkJiraUrl(tool: any) {
+    tool.jiraDomain = tool.jiraDomain.endsWith('/')
+      ? tool.jiraDomain
+      : `${tool.jiraDomain}/`;
   }
 
   async validateConnectionTools(errors: string[]): Promise<boolean> {
@@ -142,7 +155,7 @@ export class ConnectionFromClient {
   // eslint-disable-next-line
   private async validateJira(tool: any, errorPrefix: string, errors: string[]): Promise<boolean> {
     ToolType.JIRA.attributesFromClient.forEach((attribute) => {
-      if (!tool[attribute]) {
+      if (!tool[attribute] == undefined) {
         errors.push(`${errorPrefix} is missing ${attribute}`);
         return false;
       }
@@ -155,6 +168,17 @@ export class ConnectionFromClient {
     if (typeof jiraConnection === 'number') {
       errors.push(`Invalid Jira ApiKey, domain or user email`)
       return false
+    }
+
+    const jiraFallbackIssue: boolean = tool.jiraFallbackIssue
+    console.log(jiraFallbackIssue)
+    if (jiraFallbackIssue === true) {
+      const jiraFallbackIssueName: string = tool.jiraFallbackIssueName
+      console.log(jiraFallbackIssueName)
+      if (jiraFallbackIssueName === '') {
+        errors.push(`Name of the fallback Issue is empty and it shouldn\'t be`)
+        return false
+      }
     }
 
     return true;

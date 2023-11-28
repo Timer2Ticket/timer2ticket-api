@@ -172,6 +172,7 @@ router.get('/:connectionId', authCommons.checkJwt, async (req, res) => {
  * Updates user's connection with connectionId.
  */
 router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
+  //console.log(req.body)
   if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
@@ -185,12 +186,14 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(503).send('Error getting user');
   }
 
+  console.log(req.body)
   // validate connection
   const connectionFromClient: ConnectionFromClient = new ConnectionFromClient(req.body);
   if (!connectionFromClient) {
     return res.status(400).send('Incorrect request body');
   }
 
+  //console.log(connectionFromClient)
   // validate connection from client object
   const validationResults = await validate(connectionFromClient);
 
@@ -214,6 +217,7 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
   }
 
+
   let objectId;
   try {
     objectId = new ObjectId(connectionId);
@@ -221,11 +225,13 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(503).send('Error getting connection');
   }
 
+
   // get current connection
   const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
     return res.status(503).send('Error getting connection');
   }
+
 
   if (!connection.userId.equals(user._id)) {
     return res.status(503).send('Error getting connection');
@@ -233,12 +239,12 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
 
   // update connection
   const newConnection: Connection = new Connection(connection.userId, connection.userConnectionId, connectionFromClient, connection.isActive);
-
   // save connection
   const result = await databaseService.updateConnectionById(connection._id, newConnection);
   if (!result) {
     return res.status(400).send('Error updating connection');
   }
+
 
   result._id = connection._id;
 

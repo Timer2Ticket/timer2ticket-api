@@ -171,7 +171,6 @@ router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
     jiraDomain = encodeURI(jiraDomain);
 
     const jiraResponse: superagent.Response | number = await getJiraIssueStatuses(jiraDomain, jiraApiKey, jiraUserEmail);
-    console.log(jiraResponse)
     if (!jiraResponse || typeof jiraResponse === 'number') {
       return res.sendStatus(jiraResponse ? jiraResponse : 503)
     } else {
@@ -179,7 +178,7 @@ router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
       jiraResponse.body.forEach((status: any) => {
         statuses.push(status.name)
       })
-      console.log(statuses)
+      //console.log(statuses)
       return res.send(statuses);
     }
   } else {

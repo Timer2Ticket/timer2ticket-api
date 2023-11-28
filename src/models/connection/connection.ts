@@ -29,7 +29,6 @@ export class Connection {
 
     this.configSyncJobDefinition = new SyncJobDefinition(connectionFromClient.configSyncJobDefinition);
     this.timeEntrySyncJobDefinition = new SyncJobDefinition(connectionFromClient.timeEntrySyncJobDefinition);
-
     this.firstService = new SyncedService(connectionFromClient.firstTool);
     this.secondService = new SyncedService(connectionFromClient.secondTool);
 

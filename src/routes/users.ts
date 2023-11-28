@@ -51,7 +51,7 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
     }
 
     // for migration - only in commercial version - check if there is a user with same email without auth0UserId
-    if(Constants.isCommercialVersion) {
+    if (Constants.isCommercialVersion) {
       const userByEmail = await databaseService.getMigratedUser(userInfo.body.email);
       if (userByEmail) {
         userByEmail.auth0UserId = auth0UserId;
