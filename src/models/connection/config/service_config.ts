@@ -1,6 +1,7 @@
 import { DefaultTimeEntryActivity } from './default_time_entry_activity';
 import { Workspace } from './workspace';
 import { ToolType } from '../../../enums/tools/type_of_tool';
+import { FallbackIssue } from './fallback_issue';
 
 export class ServiceConfig {
   /**
@@ -23,9 +24,7 @@ export class ServiceConfig {
   //For Jira
   domain!: string | null
   //for Jira
-  fallbackIssue!: boolean | null
-  //for Jira
-  fallbackIssueName!: string | null
+  fallbackIssue!: FallbackIssue | null
 
   // eslint-disable-next-line
   constructor(toolFromUser: any) {
@@ -35,8 +34,7 @@ export class ServiceConfig {
       this.apiKey = toolFromUser.jiraApiKey
       this.domain = toolFromUser.jiraDomain
       this.userEmail = toolFromUser.jiraUserEmail
-      this.fallbackIssue = toolFromUser.jiraFallbackIssue
-      this.fallbackIssueName = toolFromUser.jiraFallbackIssueName
+      this.fallbackIssue = new FallbackIssue(toolFromUser.jiraFallbackIssue, toolFromUser.jiraFallbackIssueName)
     } else if (toolFromUser.tool === ToolType.REDMINE.name) {
       this.apiKey = toolFromUser.redmineApiKey;
       this.apiPoint = toolFromUser.redmineApiPoint;
