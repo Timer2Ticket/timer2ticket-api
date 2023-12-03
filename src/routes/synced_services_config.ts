@@ -9,6 +9,7 @@ import {
   getTogglTrackWorkspaces,
 } from '../shared/services_config_functions';
 import { stat } from 'fs';
+import { IssueState } from '../models/connection/config/issue_state';
 
 
 const router = express.Router();
@@ -174,9 +175,9 @@ router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
     if (!jiraResponse || typeof jiraResponse === 'number') {
       return res.sendStatus(jiraResponse ? jiraResponse : 503)
     } else {
-      const statuses: string[] = []
+      const statuses: IssueState[] = []
       jiraResponse.body.forEach((status: any) => {
-        statuses.push(status.name)
+        statuses.push(new IssueState(status.id, status.name))
       })
       //console.log(statuses)
       return res.send(statuses);

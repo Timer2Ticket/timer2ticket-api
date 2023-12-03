@@ -2,7 +2,7 @@ import { DefaultTimeEntryActivity } from './default_time_entry_activity';
 import { Workspace } from './workspace';
 import { ToolType } from '../../../enums/tools/type_of_tool';
 import { FallbackIssue } from './fallback_issue';
-import { IssueType } from './issue_type';
+import { IssueState } from './issue_state';
 
 export class ServiceConfig {
   /**
@@ -28,7 +28,7 @@ export class ServiceConfig {
   fallbackIssue!: FallbackIssue | null
 
   //for Jira an later redmine
-  ignoredIssueTypes!: IssueType[]
+  ignoredIssueStates!: IssueState[] | null
 
   // eslint-disable-next-line
   constructor(toolFromUser: any) {
@@ -39,10 +39,10 @@ export class ServiceConfig {
       this.domain = toolFromUser.jiraDomain
       this.userEmail = toolFromUser.jiraUserEmail
       this.fallbackIssue = new FallbackIssue(toolFromUser.jiraFallbackIssue, toolFromUser.jiraFallbackIssueName)
-      this.ignoredIssueTypes = []
-      if (toolFromUser.ignoredIssueTypes)
-        toolFromUser.ignoredIssueTypes.forEach((o: IssueType) => {
-          this.ignoredIssueTypes.push(new IssueType(o.id, o.name))
+      this.ignoredIssueStates = []
+      if (toolFromUser.ignoredIssueStates)
+        toolFromUser.ignoredIssueStates.forEach((o: IssueState) => {
+          this.ignoredIssueStates!.push(new IssueState(o.id, o.name))
         })
     } else if (toolFromUser.tool === ToolType.REDMINE.name) {
       this.apiKey = toolFromUser.redmineApiKey;
