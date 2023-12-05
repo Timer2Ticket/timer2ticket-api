@@ -10,6 +10,7 @@ import { SyncJobDefinitionFromClient } from '../models/connection/from_client/sy
 import { Constants } from '../shared/constants';
 import { MembershipInfo } from '../models/commrecial/membership_info';
 import { coreService } from '../shared/core_service';
+import { error } from 'console';
 
 const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
@@ -367,6 +368,22 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
     connection.timeEntrySyncJobDefinition.everyHour = timeEntrySyncJobDefinitionFromClient.everyHour;
     connection.timeEntrySyncJobDefinition.selectionOfDays = timeEntrySyncJobDefinitionFromClient.selectionOfDays;
     connection.timeEntrySyncJobDefinition.syncTime = timeEntrySyncJobDefinitionFromClient.syncTime;
+  }
+  //updated selected issue states to sync
+  if ('ignoredIssueStates' in req.body) {
+    const errors: string[] = [];
+
+    if (req.body.serviceNumber == 1) {
+      connection.firstService.config.ignoredIssueStates = req.body.ignoredIssueStates
+    } else if (req.body.serviceNumber == 2) {
+      connection.secondService.config.ignoredIssueStates = req.body.ignoredIssueStates
+    } else {
+      errors.push(`Invalid Number of Service, expected 1 or 2, got ${req.body.serviceNumber}`)
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
+    }
   }
 
   const result = await databaseService.updateConnectionById(connection._id, connection);
