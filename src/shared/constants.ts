@@ -8,8 +8,6 @@ export class Constants {
   static t2tCoreUrl = process.env.BACKEND_CORE_URL || 'http://localhost:3000/api/v2/';
   static sentryDsn = process.env.SENTRY_DSN || '';
 
-  static sentryDsn = process.env.SENTRY_DSN || '';
-
   static mongoDbUrl = process.env.MONGODB_URL || 'mongodb://localhost:27017';
   static dbName = process.env.DB_NAME || 'timer2ticketDB';
 
