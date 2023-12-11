@@ -94,3 +94,47 @@ export async function getJiraIssueStatuses(jiraDomain: string, jiraApiKey: strin
     return err.status;
   }
 }
+
+export async function getJiraProjects(jiraDomain: string, jiraApiKey: string, jiraUserEmail: string): Promise<superagent.Response | number> {
+  jiraDomain = jiraDomain.endsWith('/')
+    ? jiraDomain
+    : `${jiraDomain}/`;
+  // add https:// if not provided by user
+  jiraDomain = (jiraDomain.startsWith('https://') || jiraDomain.startsWith('http://'))
+    ? jiraDomain
+    : `https://${jiraDomain}`;
+
+  const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
+
+  try {
+    const response = await superagent
+      .get(`${jiraDomain}/rest/api/3/project`)
+      .accept('application/json')
+      .set('Authorization', `Basic ${secret}`);
+    return response
+  } catch (err: any) {
+    return err.status;
+  }
+}
+
+export async function getJiraIssueFileds(jiraDomain: string, jiraApiKey: string, jiraUserEmail: string): Promise<superagent.Response | number> {
+  jiraDomain = jiraDomain.endsWith('/')
+    ? jiraDomain
+    : `${jiraDomain}/`;
+  // add https:// if not provided by user
+  jiraDomain = (jiraDomain.startsWith('https://') || jiraDomain.startsWith('http://'))
+    ? jiraDomain
+    : `https://${jiraDomain}`;
+
+  const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
+
+  try {
+    const response = await superagent
+      .get(`${jiraDomain}/rest/api/3/field`)
+      .accept('application/json')
+      .set('Authorization', `Basic ${secret}`);
+    return response
+  } catch (err: any) {
+    return err.status;
+  }
+}

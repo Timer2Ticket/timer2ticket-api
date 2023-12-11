@@ -2,7 +2,9 @@ import express from 'express';
 import superagent from 'superagent';
 import { authCommons } from '../shared/auth_commons';
 import {
+  getJiraIssueFileds,
   getJiraIssueStatuses,
+  getJiraProjects,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail,
   getTogglTrackUser,
@@ -10,6 +12,8 @@ import {
 } from '../shared/services_config_functions';
 import { stat } from 'fs';
 import { IssueState } from '../models/connection/config/issue_state';
+import { Project } from '../models/connection/from_client/project';
+import { CustomField } from '../models/connection/config/custom_field';
 
 
 const router = express.Router();
@@ -187,6 +191,44 @@ router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
   }
 
 });
+
+router.get('/jira_projects', authCommons.checkJwt, async (req, res) => {
+  console.log('someone called')
+  const jiraApiKey: string | undefined = req.query['api_key']?.toString();
+  let jiraDomain: string | undefined = req.query['domain']?.toString();
+  const jiraUserEmail: string | undefined = req.query['user_email']?.toString();
+
+  if (jiraApiKey && jiraDomain && jiraUserEmail) {
+    const jiraProjectsResponse: superagent.Response | number = await getJiraProjects(jiraDomain, jiraApiKey, jiraUserEmail)
+    const jiraIssueFieldsResponse: superagent.Response | number = await getJiraIssueFileds(jiraDomain, jiraApiKey, jiraUserEmail)
+    if (!jiraProjectsResponse || typeof jiraProjectsResponse === 'number') {
+      return res.sendStatus(jiraProjectsResponse ? jiraProjectsResponse : 503)
+    } else if (!jiraIssueFieldsResponse || typeof jiraIssueFieldsResponse === 'number') {
+      return res.sendStatus(jiraIssueFieldsResponse ? jiraIssueFieldsResponse : 503)
+    } else {
+      const projects: Project[] = []
+      jiraProjectsResponse.body.forEach((project: any) => {
+        projects.push(new Project(project.id, project.name))
+      })
+      const fields: CustomField[] = []
+      jiraIssueFieldsResponse.body.forEach((field: any) => {
+        if (field.custom === true)
+          fields.push(new CustomField(field.id, field.name))
+      })
+      const response = {
+        projects: projects,
+        customFields: fields
+      }
+      console.log(fields.length)
+      return res.send(response);
+    }
+  } else {
+    return res.sendStatus(400)
+  }
+
+
+
+})
 
 
 module.exports = router;
