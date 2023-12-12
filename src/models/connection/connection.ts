@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { SyncJobDefinition } from './config/sync_job_definition';
 import { SyncedService } from './config/synced_service';
 import { ConnectionFromClient } from './from_client/connection_from_client';
+import { ProjectMapping } from './from_client/project_mapping';
 
 export class Connection {
   // Mongo
@@ -22,6 +23,7 @@ export class Connection {
   deleteTimestamp!: number | null;
   createdTimestamp!: number;
   mappings!: any[];
+  projectMappings!: ProjectMapping[]
 
   constructor(userId: ObjectId, userConnectionId: number, connectionFromClient: ConnectionFromClient, isActive: boolean) {
     this.userId = userId;
@@ -36,6 +38,7 @@ export class Connection {
     this.deleteTimestamp = null;
     this.createdTimestamp = Math.floor(Date.now());
     this.mappings = [];
+    this.projectMappings = []
   }
 
   static getConnectionBetweenString(connection: Connection): string {

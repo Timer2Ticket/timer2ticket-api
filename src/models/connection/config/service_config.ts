@@ -53,6 +53,7 @@ export class ServiceConfig {
       this.apiKey = toolFromUser.redmineApiKey;
       this.apiPoint = toolFromUser.redmineApiPoint;
       this.defaultTimeEntryActivity = new DefaultTimeEntryActivity(toolFromUser.selectedRedmineDefaultTimeEntryActivity, toolFromUser.selectedRedmineDefaultTimeEntryActivityName);
+      this.customField = toolFromUser.customField ? new CustomField(toolFromUser.customField.id, toolFromUser.customField.name) : null
     } else if (toolFromUser.tool === ToolType.TOGGL_TRACK.name) {
       this.apiKey = toolFromUser.togglTrackApiKey;
       this.workspace = new Workspace(toolFromUser.selectedTogglTrackWorkspace, toolFromUser.selectedTogglTrackWorkspaceName);

@@ -173,10 +173,10 @@ router.get('/:connectionId', authCommons.checkJwt, async (req, res) => {
  * Updates user's connection with connectionId.
  */
 router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
+  console.log(req.body)
   if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
-
   const auth0UserId = req.params.auth0UserId;
   const connectionId = req.params.connectionId;
 
@@ -223,13 +223,11 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
     return res.status(503).send('Error getting connection');
   }
 
-
   // get current connection
   const connection: Connection | null = await databaseService.getActiveConnectionById(objectId);
   if (!connection) {
     return res.status(503).send('Error getting connection');
   }
-
 
   if (!connection.userId.equals(user._id)) {
     return res.status(503).send('Error getting connection');
@@ -247,6 +245,7 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
   result._id = connection._id;
 
   const coreServiceResponse = await coreService.updateConnections([result._id.toHexString()]);
+  console.log(coreServiceResponse)
   if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
     return res.status(503).send('Error updating connection');
   }
