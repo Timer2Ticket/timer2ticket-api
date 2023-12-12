@@ -5,6 +5,7 @@ import {
   getJiraIssueFileds,
   getJiraIssueStatuses,
   getJiraProjects,
+  getRedmineProjects,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail,
   getTogglTrackUser,
@@ -183,7 +184,6 @@ router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
       jiraResponse.body.forEach((status: any) => {
         statuses.push(new IssueState(status.id, status.name))
       })
-      //console.log(statuses)
       return res.send(statuses);
     }
   } else {
@@ -193,7 +193,6 @@ router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
 });
 
 router.get('/jira_projects', authCommons.checkJwt, async (req, res) => {
-  console.log('someone called')
   const jiraApiKey: string | undefined = req.query['api_key']?.toString();
   let jiraDomain: string | undefined = req.query['domain']?.toString();
   const jiraUserEmail: string | undefined = req.query['user_email']?.toString();
@@ -219,15 +218,65 @@ router.get('/jira_projects', authCommons.checkJwt, async (req, res) => {
         projects: projects,
         customFields: fields
       }
-      console.log(fields.length)
       return res.send(response);
     }
   } else {
     return res.sendStatus(400)
   }
 
+})
 
+router.get('/redmine_projects', authCommons.checkJwt, async (req, res) => {
+  const redmineApiKey: string | undefined = req.query['api_key']?.toString();
+  let redmineApiPoint: string | undefined = req.query['api_point']?.toString();
+  // should validate too...
+  if (!redmineApiKey || !redmineApiPoint) {
+    return res.sendStatus(400);
+  }
 
+  // encode redmine api point
+  redmineApiPoint = encodeURI(redmineApiPoint);
+
+  const responseProjects: superagent.Response | number = await getRedmineProjects(redmineApiPoint, redmineApiKey);
+
+  if (!responseProjects || typeof responseProjects === 'number') {
+    // on error, response with status from Redmine
+    let statusCode = 503;
+    if (responseProjects && responseProjects !== 401) {
+      statusCode = responseProjects;
+    } else if (responseProjects && responseProjects === 401) {
+      // do not send 401, it would lead to user logout on the client side due to error intercepting
+      statusCode = 400;
+    }
+
+    return res.sendStatus(statusCode);
+  }
+  if (responseProjects.body.projects) {
+    const projects: Project[] = []
+    const custFields: CustomField[] = []
+    responseProjects.body.projects.forEach((p: any) => {
+      const custFieldsOfProject: CustomField[] = []
+      p.custom_fields.forEach((c: any) => {
+        const newCustField = new CustomField(c.id, c.name)
+        custFieldsOfProject.push(newCustField)
+
+        const found = custFields.find((f: any) => {
+          return f.id === c.id
+        })
+        if (!found) {
+          custFields.push(newCustField)
+        }
+      })
+      projects.push(new Project(p.id, p.name, custFieldsOfProject, p.parent ? p.parent.id : null))
+    })
+    const response = {
+      projects: projects,
+      customFields: custFields
+    }
+    return res.send(response)
+  } else {
+    res.sendStatus(400)
+  }
 })
 
 

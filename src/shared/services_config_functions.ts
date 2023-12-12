@@ -47,6 +47,28 @@ export async function getRedmineTimeEntryActivities(redmineApiPoint: string, red
   return responseTimeEntryActivities;
 }
 
+export async function getRedmineProjects(redmineApiPoint: string, redmineApiKey: string): Promise<superagent.Response | number> {
+  redmineApiPoint = redmineApiPoint.endsWith('/')
+    ? redmineApiPoint
+    : `${redmineApiPoint}/`;
+  // add https:// if not provided by user
+  redmineApiPoint = (redmineApiPoint.startsWith('https://') || redmineApiPoint.startsWith('http://'))
+    ? redmineApiPoint
+    : `https://${redmineApiPoint}`;
+
+  let response: superagent.Response;
+  try {
+    response = await superagent
+      .get(`${redmineApiPoint}projects.json`)
+      .accept('application/json')
+      .type('application/json')
+      .set('X-Redmine-API-Key', redmineApiKey);
+  } catch (err: any) {
+    return err.status;
+  }
+  return response;
+}
+
 export async function getRedmineUserDetail(redmineApiPoint: string, redmineApiKey: string): Promise<superagent.Response | number> {
   // add last / if not provided by user
   redmineApiPoint = redmineApiPoint.endsWith('/')
