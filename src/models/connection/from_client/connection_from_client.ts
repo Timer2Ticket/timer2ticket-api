@@ -1,4 +1,4 @@
-import { IsObject, ValidateNested } from 'class-validator';
+import { IsArray, IsObject, ValidateNested } from 'class-validator';
 import superagent from 'superagent';
 import { ToolType } from '../../../enums/tools/type_of_tool';
 import {
@@ -24,6 +24,10 @@ export class ConnectionFromClient {
   // eslint-disable-next-line
   secondTool!: any;
 
+  @IsArray()
+  // eslint-disable-next-line
+  projectMappings!: any;
+
   // eslint-disable-next-line
   constructor(obj: any) {
     this.configSyncJobDefinition = new SyncJobDefinitionFromClient(obj.configSyncJobDefinition);
@@ -43,6 +47,7 @@ export class ConnectionFromClient {
 
     this.firstTool = obj.firstTool;
     this.secondTool = obj.secondTool;
+    this.projectMappings = obj.projectMappings
   }
 
   private checkRedmineUrl(tool: any) {

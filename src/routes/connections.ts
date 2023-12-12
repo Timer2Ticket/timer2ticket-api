@@ -236,10 +236,12 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
   // update connection
   const newConnection: Connection = new Connection(connection.userId, connection.userConnectionId, connectionFromClient, connection.isActive);
   // save connection
+
   const result = await databaseService.updateConnectionById(connection._id, newConnection);
   if (!result) {
     return res.status(400).send('Error updating connection');
   }
+
 
 
   result._id = connection._id;

@@ -39,6 +39,9 @@ export class Connection {
     this.createdTimestamp = Math.floor(Date.now());
     this.mappings = [];
     this.projectMappings = []
+    connectionFromClient.projectMappings.forEach((m: any) => {
+      this.projectMappings.push(new ProjectMapping(m.idFirstService, m.idSecondService))
+    })
   }
 
   static getConnectionBetweenString(connection: Connection): string {
