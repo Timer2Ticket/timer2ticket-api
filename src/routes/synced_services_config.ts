@@ -2,6 +2,7 @@ import express from 'express';
 import superagent from 'superagent';
 import { authCommons } from '../shared/auth_commons';
 import {
+  checkJiraConnection,
   getJiraIssueFileds,
   getJiraIssueStatuses,
   getJiraProjects,
@@ -167,6 +168,26 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
 * Checks if the connection to user jira is valid
 * checks by using API Key, domain and user email
 */
+router.get('/check_jira_connection', authCommons.checkJwt, async (req, res) => {
+  const jiraApiKey: string | undefined = req.query['api_key']?.toString();
+  let jiraDomain: string | undefined = req.query['domain']?.toString();
+  const jiraUserEmail: string | undefined = req.query['user_email']?.toString();
+  // should validate too...
+  if (jiraApiKey && jiraDomain && jiraUserEmail) {
+    jiraDomain = encodeURI(jiraDomain);
+
+    const jiraResponse: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail);
+    if (!jiraResponse || typeof jiraResponse === 'number') {
+      return res.sendStatus(jiraResponse ? jiraResponse : 503)
+    } else {
+      return res.send(jiraResponse.body.accountId);
+    }
+  } else {
+    return res.sendStatus(400)
+  }
+})
+
+
 router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
   // those 3 are filled by user in the client form
   const jiraApiKey: string | undefined = req.query['api_key']?.toString();

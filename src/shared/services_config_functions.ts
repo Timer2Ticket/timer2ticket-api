@@ -94,6 +94,28 @@ export async function getRedmineUserDetail(redmineApiPoint: string, redmineApiKe
 }
 
 
+export async function checkJiraConnection(jiraDomain: string, jiraApiKey: string, jiraUserEmail: string): Promise<superagent.Response | number> {
+  // add last / if not provided by user
+  jiraDomain = jiraDomain.endsWith('/')
+    ? jiraDomain
+    : `${jiraDomain}/`;
+  // add https:// if not provided by user
+  jiraDomain = (jiraDomain.startsWith('https://') || jiraDomain.startsWith('http://'))
+    ? jiraDomain
+    : `https://${jiraDomain}`;
+
+  const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
+
+  try {
+    const response = await superagent
+      .get(`${jiraDomain}/rest/api/3/myself`)
+      .accept('application/json')
+      .set('Authorization', `Basic ${secret}`);
+    return response
+  } catch (err: any) {
+    return err.status;
+  }
+}
 export async function getJiraIssueStatuses(jiraDomain: string, jiraApiKey: string, jiraUserEmail: string): Promise<superagent.Response | number> {
   // add last / if not provided by user
   jiraDomain = jiraDomain.endsWith('/')
