@@ -54,6 +54,11 @@ export class ConnectionFromClient {
     tool.redmineApiPoint = tool.redmineApiPoint.endsWith('/')
       ? tool.redmineApiPoint
       : `${tool.redmineApiPoint}/`;
+
+    tool.redmineApiPoint = tool.redmineApiPoint.startsWith('https://')
+      ? tool.redmineApiPoint
+      : `https://${tool.redmineApiPoint}`
+
   }
   private checkJiraUrl(tool: any) {
     tool.jiraDomain = tool.jiraDomain.endsWith('/')
