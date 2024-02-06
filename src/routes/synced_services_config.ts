@@ -6,6 +6,7 @@ import {
   getJiraIssueFileds,
   getJiraIssueStatuses,
   getJiraProjects,
+  getRedmineIssues,
   getRedmineProjects,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail,
@@ -259,41 +260,52 @@ router.get('/redmine_projects', authCommons.checkJwt, async (req, res) => {
   redmineApiPoint = encodeURI(redmineApiPoint);
 
   const responseProjects: superagent.Response | number = await getRedmineProjects(redmineApiPoint, redmineApiKey);
+  const responseIssues: superagent.Response | number = await getRedmineIssues(redmineApiPoint, redmineApiKey)
 
-  if (!responseProjects || typeof responseProjects === 'number') {
+  if (!responseProjects || typeof responseProjects === 'number' || !responseIssues || typeof responseIssues === 'number') {
     // on error, response with status from Redmine
     let statusCode = 503;
-    if (responseProjects && responseProjects !== 401) {
+    if (responseProjects && responseProjects !== 401 && typeof responseProjects === 'number') {
       statusCode = responseProjects;
-    } else if (responseProjects && responseProjects === 401) {
+    } else if (responseIssues && responseIssues !== 401 && typeof responseIssues === 'number') {
+      statusCode = responseIssues;
+    } else if ((responseProjects && responseProjects === 401) || (responseIssues && responseIssues === 401)) {
       // do not send 401, it would lead to user logout on the client side due to error intercepting
       statusCode = 400;
     }
-
     return res.sendStatus(statusCode);
   }
-  if (responseProjects.body.projects) {
+  if (responseProjects.body.projects && responseIssues.body.issues) {
     const projects: Project[] = []
     const custFields: CustomField[] = []
-    responseProjects.body.projects.forEach((p: any) => {
+    responseProjects.body.projects.forEach((project: any) => {
+      projects.push(new Project(project.id, project.name, [], project.parent ? project.parent.id : null))
+    })
+    responseIssues.body.issues.forEach((issue: any) => {
       const custFieldsOfProject: CustomField[] = []
-      p.custom_fields.forEach((c: any) => {
+      issue.custom_fields.forEach((c: any) => {
         const newCustField = new CustomField(c.id, c.name)
-        custFieldsOfProject.push(newCustField)
-
-        const found = custFields.find((f: any) => {
+        const foundGlobaly = custFields.find((f: any) => {
           return f.id === c.id
         })
-        if (!found) {
+        if (!foundGlobaly) {
           custFields.push(newCustField)
         }
+        projects.forEach((project: Project) => {
+          const found = project.customFields.find((c: CustomField) => {
+            return c.id === newCustField.id
+          })
+          if (!found && project.id === issue.project.id) {
+            project.customFields.push(newCustField)
+          }
+        })
       })
-      projects.push(new Project(p.id, p.name, custFieldsOfProject, p.parent ? p.parent.id : null))
     })
     const response = {
       projects: projects,
       customFields: custFields
     }
+    console.log(response)
     return res.send(response)
   } else {
     res.sendStatus(400)
