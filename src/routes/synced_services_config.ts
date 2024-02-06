@@ -305,7 +305,6 @@ router.get('/redmine_projects', authCommons.checkJwt, async (req, res) => {
       projects: projects,
       customFields: custFields
     }
-    console.log(response)
     return res.send(response)
   } else {
     res.sendStatus(400)
