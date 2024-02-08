@@ -70,8 +70,22 @@ export class ConnectionFromClient {
     let result = true;
 
     if (this.firstTool.tool == this.secondTool.tool) {
-      errors.push('Both tools are the same');
-      return false;
+      if (this.firstTool.tool && this.firstTool.tool == ToolType.TOGGL_TRACK.name) {
+        errors.push('Both tools are Toggl Track')
+        return false;
+      }
+      if (this.firstTool.tool && this.firstTool.tool == ToolType.REDMINE.name) {
+        if (this.firstTool.redmineApiPoint == this.secondTool.redmineApiPoint) {
+          errors.push('Same Redmine API point')
+          return false
+        }
+      }
+      if (this.firstTool.tool && this.firstTool.tool == ToolType.JIRA.name) {
+        if (this.firstTool.jiraDomain == this.secondTool.jiraDomain) {
+          errors.push('Same Jira Domain')
+          return false
+        }
+      }
     }
 
     if (!await this.validateFirstTool(errors)) {
