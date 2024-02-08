@@ -74,18 +74,6 @@ export class ConnectionFromClient {
         errors.push('Both tools are Toggl Track')
         return false;
       }
-      if (this.firstTool.tool && this.firstTool.tool == ToolType.REDMINE.name) {
-        if (this.areAPIPointsSame(this.firstTool.redmineApiPoint, this.secondTool.redmineApiPoint)) {
-          errors.push('Same Redmine API point')
-          return false
-        }
-      }
-      if (this.firstTool.tool && this.firstTool.tool == ToolType.JIRA.name) {
-        if (this.areAPIPointsSame(this.firstTool.jiraDomain, this.secondTool.jiraDomain)) {
-          errors.push('Same Jira Domain')
-          return false
-        }
-      }
     }
 
     if (!await this.validateFirstTool(errors)) {
@@ -94,15 +82,27 @@ export class ConnectionFromClient {
     if (!await this.validateSecondTool(errors)) {
       result = false;
     }
+    if (this.firstTool.tool == this.secondTool.tool && this.firstTool.tool == ToolType.REDMINE.name) {
+      if (this.areAPIPointsSame(this.firstTool.redmineApiPoint, this.secondTool.redmineApiPoint)) {
+        errors.push('Same Redmine API point')
+        return false
+      }
+    }
+    if (this.firstTool.tool == this.secondTool.tool && this.firstTool.tool == ToolType.JIRA.name) {
+      if (this.areAPIPointsSame(this.firstTool.jiraDomain, this.secondTool.jiraDomain)) {
+        errors.push('Same Jira Domain')
+        return false
+      }
+    }
 
     return result;
   }
 
   private areAPIPointsSame(first: string, second: string): boolean {
     if (!first.startsWith('https://'))
-      first = `'https://${first}`
+      first = `https://${first}`
     if (!second.startsWith('https://'))
-      second = `'https://${second}`
+      second = `https://${second}`
     if (!first.endsWith('/'))
       first = `${first}/`
     if (!second.endsWith('/'))
@@ -154,7 +154,7 @@ export class ConnectionFromClient {
     const selectedRedmineDefaultTimeEntryActivityName: string = tool.selectedRedmineDefaultTimeEntryActivityName;
 
     const responseTimeEntryActivities: superagent.Response | number = await getRedmineTimeEntryActivities(redmineApiPoint, redmineApiKey);
-    if (typeof responseTimeEntryActivities === 'number') {
+    if (!responseTimeEntryActivities || typeof responseTimeEntryActivities === 'number') {
       errors.push(`Invalid redmine api key or api point.`);
       return false;
     }
@@ -201,7 +201,7 @@ export class ConnectionFromClient {
     const jiraDomain: string = tool.jiraDomain
 
     const jiraConnection: superagent.Response | number = await getJiraIssueStatuses(jiraDomain, jiraApiKey, jiraUserEmail)
-    if (typeof jiraConnection === 'number') {
+    if (!jiraConnection || typeof jiraConnection === 'number') {
       errors.push(`Invalid Jira ApiKey, domain or user email`)
       return false
     }
