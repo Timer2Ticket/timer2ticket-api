@@ -75,13 +75,13 @@ export class ConnectionFromClient {
         return false;
       }
       if (this.firstTool.tool && this.firstTool.tool == ToolType.REDMINE.name) {
-        if (this.firstTool.redmineApiPoint == this.secondTool.redmineApiPoint) {
+        if (this.areAPIPointsSame(this.firstTool.redmineApiPoint, this.secondTool.redmineApiPoint)) {
           errors.push('Same Redmine API point')
           return false
         }
       }
       if (this.firstTool.tool && this.firstTool.tool == ToolType.JIRA.name) {
-        if (this.firstTool.jiraDomain == this.secondTool.jiraDomain) {
+        if (this.areAPIPointsSame(this.firstTool.jiraDomain, this.secondTool.jiraDomain)) {
           errors.push('Same Jira Domain')
           return false
         }
@@ -96,6 +96,18 @@ export class ConnectionFromClient {
     }
 
     return result;
+  }
+
+  private areAPIPointsSame(first: string, second: string): boolean {
+    if (!first.startsWith('https://'))
+      first = `'https://${first}`
+    if (!second.startsWith('https://'))
+      second = `'https://${second}`
+    if (!first.endsWith('/'))
+      first = `${first}/`
+    if (!second.endsWith('/'))
+      second = `${second}/`
+    return first === second
   }
 
   private async validateFirstTool(errors: string[]): Promise<boolean> {
