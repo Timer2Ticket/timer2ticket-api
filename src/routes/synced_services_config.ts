@@ -204,7 +204,13 @@ router.get('/jira_issue_statuses', authCommons.checkJwt, async (req, res) => {
     } else {
       const statuses: IssueState[] = []
       jiraResponse.body.forEach((status: any) => {
-        statuses.push(new IssueState(status.id, status.name))
+        const newStatus = new IssueState(status.statusCategory.id, status.statusCategory.name)
+        const found = statuses.find((st: IssueState) => {
+          return st.id === newStatus.id
+        })
+        if (!found) {
+          statuses.push(newStatus)
+        }
       })
       return res.send(statuses);
     }
