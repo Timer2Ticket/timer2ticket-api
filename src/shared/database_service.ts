@@ -98,7 +98,7 @@ export class DatabaseService {
     return this._usersCollection.findOne(filterQuery);
   }
 
-  async getMigratedUser(email: string) : Promise<User | null> {
+  async getMigratedUser(email: string): Promise<User | null> {
     if (!this._usersCollection) return null;
     const filterQuery = { email: email, auth0UserId: "" };
     return this._usersCollection.findOne(filterQuery);
@@ -516,6 +516,18 @@ export class DatabaseService {
 
     const result = await this._connectionsCollection.deleteOne(filterQuery);
     return result.result.ok === 1;
+  }
+
+  async getConnectionByServiceAccountId(accountId: number | string): Promise<Connection[] | null> {
+    if (!this._connectionsCollection) return null
+
+    const filterQuery = {
+      $or: [
+        { "secondService.config.userId": accountId },
+        { "firstService.config.userId": accountId }]
+    }
+    const result = await this._connectionsCollection.find(filterQuery).project({ _id: 1 }).toArray()
+    return result
   }
 }
 
