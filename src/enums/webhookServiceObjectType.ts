@@ -1,7 +1,8 @@
-const enum WebhookServiceObjectType {
+const enum WebhookEventObjectType {
     Issue = 'ISSUE',
     Project = 'PROJECT',
+    Worklog = 'WORKLOG',
     Error = 'ERROR'
 }
 
-export { WebhookServiceObjectType }
+export { WebhookEventObjectType }

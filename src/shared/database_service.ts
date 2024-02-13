@@ -526,7 +526,7 @@ export class DatabaseService {
         { "secondService.config.userId": accountId },
         { "firstService.config.userId": accountId }]
     }
-    const result = await this._connectionsCollection.find(filterQuery).project({ _id: 1 }).toArray()
+    const result = await this._connectionsCollection.find(filterQuery).project({ _id: 1, userId: 1 }).toArray()
     return result
   }
 }
