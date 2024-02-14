@@ -55,6 +55,18 @@ export class CoreService {
     }
     return response;
   }
+
+  async postWebhook(data: any): Promise<superagent.Response | number> {
+    let response: superagent.Response;
+    try {
+      response = await superagent
+        .post(`${Constants.t2tCoreUrl}webhooks`)
+        .send(data)
+    } catch (err: any) {
+      return err.status;
+    }
+    return response;
+  }
 }
 
 export const coreService = CoreService.Instance;
