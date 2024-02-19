@@ -7,6 +7,10 @@ import { WebhookEventObjectType } from '../enums/webhookServiceObjectType';
 import { databaseService } from '../shared/database_service';
 import { coreService } from '../shared/core_service';
 import { ObjectId } from 'mongodb';
+import { Connection } from '../models/connection/connection';
+import { getJiraIssueById } from '../shared/services_config_functions';
+import { Service } from 'ts-node';
+import { SyncedService } from '../models/connection/config/synced_service';
 
 
 const router = express.Router({ mergeParams: true });
@@ -14,13 +18,12 @@ router.use(express.urlencoded({ extended: false }));
 router.use(express.json());
 
 router.use((req, res, next) => {
-    console.log(`webhook router calls at time: ${Date.now().toString()}`);
+    console.log(`webhook router calls at time: ${Date().toString()}`);
 
     // // For CORS policy
     // res.append('Access-Control-Allow-Origin', ['*']);
     // res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
     // res.append('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,sentry-trace');
-
     next();
 });
 
@@ -34,35 +37,51 @@ if (Constants.isCommercialVersion) {
 
 
 router.post('/jira/:connectionId', async (req, res) => {
-    //TODO validate sender
     if (!req.body)
         return
     let connectionId
+
     try {
         connectionId = new ObjectId(req.params.connectionId);
     } catch (err: any) {
+        console.log('unable to get connection Id')
         return
     }
     //get webhook type
     const body = req.body
     const event = _getJiraWebhookEvent(body)
-    if (event === WebhookEvent.Error) return
+    if (event === WebhookEvent.Error) {
+        console.log('unable to read event')
+        return
+    }
     const eventObject = _getJiraEventObjectType(body)
-    if (eventObject === WebhookEventObjectType.Error) return
+    if (eventObject === WebhookEventObjectType.Error) {
+        console.log('unable to read object from webhook')
+        return
+    }
     //get user
     const accountId = _getJiraUserId(body, eventObject)
     if (!accountId)
         return
     //get connections (there may be more, I have to work with all of them)
     const connection = await databaseService.getConnectionById(connectionId)
-    if (!connection)
+    if (!connection) {
+        console.log('unable to get COnnection')
         return
+    }
+    const accept = acceptWebhook(connection, event, eventObject, true)
+    if (!accept) {
+        console.log('unsupported type of webhook')
+        return
+    }
     //check subscription todo
+    //get service in case of worklog
+    const service = connection.firstService.name === 'Jira' ? connection.firstService : connection.secondService //not working for jira2jira
     let newObject
     if (event === WebhookEvent.Deleted)
-        newObject = {}
+        newObject = {} // TODO asi tam chces ID
     else {
-        newObject = _getJiraObject(body, eventObject)
+        newObject = await _getJiraObject(body, eventObject, service)
         if (!newObject)
             return
     }
@@ -73,9 +92,10 @@ router.post('/jira/:connectionId', async (req, res) => {
         event: event,
         eventObject: eventObject,
         accountId: accountId,
-        connection: connection,
-        newObject: newObject
+        connection: connection._id,
+        serviceObject: newObject
     }
+    console.log(data)
     const coreResponse = await coreService.postWebhook(data)
 })
 
@@ -130,21 +150,30 @@ function _getJiraUserId(body: any, objType: WebhookEventObjectType): string | nu
     }
 }
 
-function _getJiraObject(body: any, objType: WebhookEventObjectType): any {
+async function _getJiraObject(body: any, objType: WebhookEventObjectType, service: SyncedService | null = null): Promise<any> {
     if (objType === WebhookEventObjectType.Worklog) {
         //data for new Time Entry
-        if (body.worklog && body.worklog.issueId && body.worklog.id && body.worklog.started && body.worklog.timeSpentSeconds) {
+        if (service && body.worklog && body.worklog.issueId && body.worklog.id && body.worklog.started && body.worklog.timeSpentSeconds) {
             const worklog = body.worklog
             const durationInMilliseconds = worklog.timeSpentSeconds * 1000
             const start = new Date(worklog.started)
             const comment = worklog.comment ? worklog.comment : ''
+            const issue = await getJiraIssue(service, worklog.issueId) //needed for projectId of the TimeEntry
+            const projectId = issue.fields.project.id
+            const summary = issue.fields.summary
             return {
-                id: `${worklog.issueId}_${worklog.id}`,
-                projectId: null,
-                text: comment,
-                start: start,
-                end: new Date(start.getTime() + durationInMilliseconds),
-                durationInMiliseconds: durationInMilliseconds,
+                id: worklog.issueId,
+                name: summary,
+                type: objType,
+                projectId: projectId,
+                timeEntry: {
+                    id: `${worklog.issueId}_${worklog.id}`,
+                    projectId: projectId,
+                    text: comment,
+                    start: start,
+                    end: new Date(start.getTime() + durationInMilliseconds),
+                    durationInMilliseconds: durationInMilliseconds,
+                }
             }
         } else
             return null
@@ -168,6 +197,37 @@ function _getJiraObject(body: any, objType: WebhookEventObjectType): any {
             }
         else return null
     }
+}
+
+function acceptWebhook(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, primaryServiceCalled: boolean): boolean {
+    if (!connection.isActive)
+        return false
+
+    if (primaryServiceCalled) {
+        return true //TODO decide if ignore delete
+    } else { //secondary
+        if (eventObject === WebhookEventObjectType.Worklog) {
+            return true
+        } else {
+            // I don care about projects and tasks in second tool
+            return false
+        }
+    }
+    return true
+}
+
+async function getJiraIssue(service: SyncedService, issueId: number): Promise<any | null> {
+    if (service.name !== 'Jira')
+        return null
+    const jiraDomain = service.config.domain!
+    const apiKey = service.config.apiKey
+    const userEmail = service.config.userEmail!
+    const response = await getJiraIssueById(jiraDomain, apiKey, userEmail, issueId)
+    if (!response || typeof response === 'number')
+        return null
+    else if (response.body && response.body.fields && response.body.fields.project && response.body.fields.project.id)
+        return response.body
+    return null
 }
 
 module.exports = router

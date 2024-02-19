@@ -1,7 +1,7 @@
 const enum WebhookEventObjectType {
-    Issue = 'ISSUE',
-    Project = 'PROJECT',
-    Worklog = 'WORKLOG',
+    Issue = 'issue',
+    Project = 'project',
+    Worklog = 'worklog',
     Error = 'ERROR'
 }
 

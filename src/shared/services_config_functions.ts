@@ -205,3 +205,26 @@ export async function getJiraIssueFileds(jiraDomain: string, jiraApiKey: string,
     return err.status;
   }
 }
+
+
+export async function getJiraIssueById(jiraDomain: string, jiraApiKey: string, jiraUserEmail: string, issueId: number): Promise<superagent.Response | null> {
+  jiraDomain = jiraDomain.endsWith('/')
+    ? jiraDomain
+    : `${jiraDomain}/`;
+  // add https:// if not provided by user
+  jiraDomain = (jiraDomain.startsWith('https://') || jiraDomain.startsWith('http://'))
+    ? jiraDomain
+    : `https://${jiraDomain}`;
+
+  const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
+
+  try {
+    const response = await superagent
+      .get(`${jiraDomain}/rest/api/3/issue/${issueId}`)
+      .accept('application/json')
+      .set('Authorization', `Basic ${secret}`);
+    return response
+  } catch (err: any) {
+    return err.status;
+  }
+}
