@@ -24,6 +24,26 @@ export async function getTogglTrackWorkspaces(togglTrackApiKey: string): Promise
   return responseWorkspaces;
 }
 
+export async function createTogglTrackWebhook(togglTrackApiKey: string, workspaceId: number, urlCallback: string): Promise<superagent.Response | number> {
+  let response
+  try {
+    response = await superagent
+      .post(`https://api.track.toggl.com/webhooks/api/v1/subscriptions/${workspaceId}`)
+      .auth(togglTrackApiKey, 'api_token')
+      .send({
+        url_callback: urlCallback,
+        event_filters: [
+          { entity: "time_entry", action: "created" },
+          { entity: "time_entry", action: "updated" },
+          { entity: "time_entry", action: "deleted" },
+        ]
+      })
+  } catch (err: any) {
+    return err.status
+  }
+  return response
+}
+
 export async function getRedmineTimeEntryActivities(redmineApiPoint: string, redmineApiKey: string): Promise<superagent.Response | number> {
   // add last / if not provided by user
   redmineApiPoint = redmineApiPoint.endsWith('/')

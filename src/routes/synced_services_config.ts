@@ -3,6 +3,7 @@ import superagent from 'superagent';
 import { authCommons } from '../shared/auth_commons';
 import {
   checkJiraConnection,
+  createTogglTrackWebhook,
   getJiraIssueFileds,
   getJiraIssueStatuses,
   getJiraProjects,
@@ -163,6 +164,32 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
     return res.sendStatus(503);
   }
 });
+
+router.post('/toggl_track_create_webhook', async (req, res) => {
+  const togglTrackApiKey: string | undefined = req.query['api_key']?.toString();
+
+  if (!togglTrackApiKey) {
+    return res.sendStatus(400);
+  }
+  const password = ''
+  const workspaceId = 0
+  const callbackUrl = ''
+  const response = await createTogglTrackWebhook(togglTrackApiKey, workspaceId, callbackUrl)
+  console.log(response)
+  if (!response || typeof response === 'number') {
+    // on error, response with status from Toggl Track
+    let statusCode = 503;
+    if (response && response !== 401) {
+      statusCode = response;
+    } else if (response && response === 401) {
+      // do not send 401, it would lead to user logout on the client side due to error intercepting
+      statusCode = 400;
+    }
+    return res.sendStatus(statusCode);
+  }
+  //save password to DB
+  res.sendStatus(201)
+})
 
 
 /*
