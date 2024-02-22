@@ -11,6 +11,8 @@ import { Connection } from '../models/connection/connection';
 import { getJiraIssueById } from '../shared/services_config_functions';
 import { Service } from 'ts-node';
 import { SyncedService } from '../models/connection/config/synced_service';
+import { timeStamp } from 'console';
+import { WebhookEventData } from '../models/connection/config/webhook_event_data';
 
 
 const router = express.Router({ mergeParams: true });
@@ -74,30 +76,23 @@ router.post('/jira/:connectionId', async (req, res) => {
         console.log('unsupported type of webhook')
         return
     }
-    //check subscription todo
+    //check subscription TODO
     //get service in case of worklog
-    const service = connection.firstService.name === 'Jira' ? connection.firstService : connection.secondService //not working for jira2jira
-    let newObject
-    if (event === WebhookEvent.Deleted)
-        newObject = {} // TODO asi tam chces ID
-    else {
-        newObject = await _getJiraObject(body, eventObject, service)
-        if (!newObject)
-            return
-    }
-
-    const data = {
-        service: 'Jira',
-        timestamp: body.timestamp,
-        event: event,
-        eventObject: eventObject,
-        accountId: accountId,
-        connection: connection._id,
-        serviceObject: newObject
-    }
-    console.log(data)
-    const coreResponse = await coreService.postWebhook(data)
+    const webhookObject = _getJiraWebhookObject(body, event, eventObject, connection)
+    if (!webhookObject)
+        return
+    const coreResponse = await coreService.postWebhook(webhookObject)
 })
+
+router.post('/toggl_track/:password', (req, res) => {
+    //need to be able to validate creating a webhook
+    if (req.body && req.body.payload && req.body.payload === 'ping' && req.body.validation_code) {
+        const validationCode = req.body.validation_code
+        res.json({ validation_code: validationCode })
+    }
+    //TODO
+})
+
 
 
 function _getJiraWebhookEvent(body: any): WebhookEvent {
@@ -150,51 +145,22 @@ function _getJiraUserId(body: any, objType: WebhookEventObjectType): string | nu
     }
 }
 
-async function _getJiraObject(body: any, objType: WebhookEventObjectType, service: SyncedService | null = null): Promise<any> {
+function _getJiraWebhookObject(body: any, event: WebhookEvent, objType: WebhookEventObjectType, connection: Connection): WebhookEventData | null {
+    const serviceNumber = connection.firstService.name === 'Jira' ? 1 : 2
     if (objType === WebhookEventObjectType.Worklog) {
         //data for new Time Entry
-        if (service && body.worklog && body.worklog.issueId && body.worklog.id && body.worklog.started && body.worklog.timeSpentSeconds) {
-            const worklog = body.worklog
-            const durationInMilliseconds = worklog.timeSpentSeconds * 1000
-            const start = new Date(worklog.started)
-            const comment = worklog.comment ? worklog.comment : ''
-            const issue = await getJiraIssue(service, worklog.issueId) //needed for projectId of the TimeEntry
-            const projectId = issue.fields.project.id
-            const summary = issue.fields.summary
-            return {
-                id: worklog.issueId,
-                name: summary,
-                type: objType,
-                projectId: projectId,
-                timeEntry: {
-                    id: `${worklog.issueId}_${worklog.id}`,
-                    projectId: projectId,
-                    text: comment,
-                    start: start,
-                    end: new Date(start.getTime() + durationInMilliseconds),
-                    durationInMilliseconds: durationInMilliseconds,
-                }
-            }
+        if (body.worklog && body.worklog.issueId && body.worklog.id && body.worklog.started && body.worklog.timeSpentSeconds) {
+            return new WebhookEventData(objType, `${body.worklog.issueId}_${body.worklog.id}`, event, body.timestamp, connection._id, serviceNumber)
         } else
             return null
-    } else if (objType === WebhookEventObjectType.Issue) { // issue
+    } else if (objType === WebhookEventObjectType.Issue) {
         //data for Issue ServiceObject
         if (body.issue && body.issue.id && body.issue.fields && body.issue.fields.summary && body.issue.fields.project && body.issue.fields.project.id)
-            return {
-                id: body.issue.id,
-                name: body.issue.fields.summary,
-                type: objType,
-                projectId: body.issue.fields.project.id,
-            }
+            return new WebhookEventData(objType, body.issue.id, event, body.timestamp, connection._id, serviceNumber)
         else return null
     } else { // project
         if (body.project && body.project.id && body.project.name)
-            return {
-                id: body.project.id,
-                name: body.project.name,
-                type: objType,
-                projectId: body.project.id,
-            }
+            return new WebhookEventData(objType, body.project.id, event, body.timestamp, connection._id, serviceNumber)
         else return null
     }
 }
@@ -213,7 +179,6 @@ function acceptWebhook(connection: Connection, event: WebhookEvent, eventObject:
             return false
         }
     }
-    return true
 }
 
 async function getJiraIssue(service: SyncedService, issueId: number): Promise<any | null> {

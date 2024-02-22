@@ -1,5 +1,6 @@
 import superagent from 'superagent';
 import { Constants } from './constants';
+import { WebhookEventData } from '../models/connection/config/webhook_event_data';
 
 export class CoreService {
   private static _instance: CoreService;
@@ -56,7 +57,7 @@ export class CoreService {
     return response;
   }
 
-  async postWebhook(data: any): Promise<superagent.Response | number> {
+  async postWebhook(data: WebhookEventData): Promise<superagent.Response | number> {
     let response: superagent.Response;
     try {
       response = await superagent
