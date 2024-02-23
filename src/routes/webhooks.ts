@@ -39,6 +39,7 @@ if (Constants.isCommercialVersion) {
 
 
 router.post('/jira/:connectionId', async (req, res) => {
+    res.sendStatus(200)
     if (!req.body)
         return
     let connectionId
@@ -81,7 +82,9 @@ router.post('/jira/:connectionId', async (req, res) => {
     const webhookObject = _getJiraWebhookObject(body, event, eventObject, connection)
     if (!webhookObject)
         return
+    console.log(webhookObject)
     const coreResponse = await coreService.postWebhook(webhookObject)
+    console.log('core responded ')
 })
 
 router.post('/toggl_track/:password', (req, res) => {
