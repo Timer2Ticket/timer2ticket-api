@@ -192,7 +192,6 @@ export async function getJiraProjects(jiraDomain: string, jiraApiKey: string, ji
     : `https://${jiraDomain}`;
 
   const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
-
   try {
     const response = await superagent
       .get(`${jiraDomain}/rest/api/3/project`)
@@ -200,6 +199,7 @@ export async function getJiraProjects(jiraDomain: string, jiraApiKey: string, ji
       .set('Authorization', `Basic ${secret}`);
     return response
   } catch (err: any) {
+    console.log(err)
     return err.status;
   }
 }
