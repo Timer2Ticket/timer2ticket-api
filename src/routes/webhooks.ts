@@ -43,7 +43,6 @@ router.post('/jira/:connectionId', async (req, res) => {
     if (!req.body)
         return
     let connectionId
-
     try {
         connectionId = new ObjectId(req.params.connectionId);
     } catch (err: any) {
@@ -72,28 +71,66 @@ router.post('/jira/:connectionId', async (req, res) => {
         console.log('unable to get COnnection')
         return
     }
-    const accept = acceptWebhook(connection, event, eventObject, true)
+    //check subscription
+    const subscriptionAllowsWebhooks = _checkSubscriptionForWebhook(connection)
+    if (!subscriptionAllowsWebhooks) {
+        console.log('unsupported subscription for webhooks')
+        return
+    }
+
+
+    const accept = _acceptWebhook(connection, event, eventObject, true)
     if (!accept) {
         console.log('unsupported type of webhook')
         return
     }
-    //check subscription TODO
     //get service in case of worklog
     const webhookObject = _getJiraWebhookObject(body, event, eventObject, connection)
     if (!webhookObject)
         return
-    console.log(webhookObject)
+    //   console.log(webhookObject)
     const coreResponse = await coreService.postWebhook(webhookObject)
     console.log('core responded ')
 })
 
-router.post('/toggl_track/:password', (req, res) => {
+router.post('/toggl_track/:connectionId', async (req, res) => {
     //need to be able to validate creating a webhook
+    console.log('toggl track called')
     if (req.body && req.body.payload && req.body.payload === 'ping' && req.body.validation_code) {
         const validationCode = req.body.validation_code
         res.json({ validation_code: validationCode })
+    } else {
+        res.sendStatus(200)
     }
-    //TODO
+    let duration, action, teId, timestamp, tagIds, projectId
+    try {
+        action = req.body.metadata.action
+        teId = req.body.metadata.time_entry_id
+        timestamp = new Date(req.body.timestamp)
+        duration = req.body.payload.duration
+        tagIds = req.body.payload.tag_ids
+        projectId = req.body.payload.project_id
+    } catch (ex: any) {
+        console.log('something went wrong while getting webhook data')
+        return
+    }
+    if (duration <= 0 || (!tagIds && !projectId)) //time entry is not complete yet
+        return
+
+    let connectionId
+    try {
+        connectionId = new ObjectId(req.params.connectionId);
+    } catch (err: any) {
+        console.log('unable to get connection Id')
+        return
+    }
+    const connection = await databaseService.getConnectionById(connectionId)
+    if (!connection)
+        return
+    const serviceNumber = connection.firstService.name === "Toggl Track" ? 1 : 2
+    const event = action === "created" ? WebhookEvent.Created : (action === "updated" ? WebhookEvent.Updated : WebhookEvent.Deleted)
+    const newWorklogObject = new WebhookEventData(WebhookEventObjectType.Worklog, teId, event, timestamp, connectionId, serviceNumber)
+    //notify core
 })
 
 
@@ -168,8 +205,10 @@ function _getJiraWebhookObject(body: any, event: WebhookEvent, objType: WebhookE
     }
 }
 
-function acceptWebhook(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, primaryServiceCalled: boolean): boolean {
-    if (!connection.isActive)
+function _acceptWebhook(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, primaryServiceCalled: boolean): boolean {
+    if (!connection.isActive
+        || (connection.configSyncJobDefinition.status !== "SUCCESS" && (eventObject === WebhookEventObjectType.Issue || eventObject === WebhookEventObjectType.Project))
+        || (connection.timeEntrySyncJobDefinition.status !== "SUCCESS" && eventObject === WebhookEventObjectType.Worklog))
         return false
 
     if (primaryServiceCalled) {
@@ -184,7 +223,7 @@ function acceptWebhook(connection: Connection, event: WebhookEvent, eventObject:
     }
 }
 
-async function getJiraIssue(service: SyncedService, issueId: number): Promise<any | null> {
+async function _getJiraIssue(service: SyncedService, issueId: number): Promise<any | null> {
     if (service.name !== 'Jira')
         return null
     const jiraDomain = service.config.domain!
@@ -196,6 +235,11 @@ async function getJiraIssue(service: SyncedService, issueId: number): Promise<an
     else if (response.body && response.body.fields && response.body.fields.project && response.body.fields.project.id)
         return response.body
     return null
+}
+
+function _checkSubscriptionForWebhook(connection: Connection): boolean {
+    return true
+    //TODO do better in comertial version
 }
 
 module.exports = router
