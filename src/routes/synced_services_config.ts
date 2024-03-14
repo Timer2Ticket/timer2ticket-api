@@ -266,8 +266,23 @@ router.get('/jira_projects', authCommons.checkJwt, async (req, res) => {
       })
       const fields: CustomField[] = []
       jiraIssueFieldsResponse.body.forEach((field: any) => {
-        if (field.custom === true)
-          fields.push(new CustomField(field.id, field.name))
+        if (field.custom === true) {
+          const newField = new CustomField(field.id, field.name)
+          fields.push(newField)
+          if (!field.scope) {
+            projects.forEach(project => {
+              project.customFields.push(newField)
+            })
+          } else {
+            if (field.scope.project && field.scope.project.id) {
+              const project = projects.find(project => {
+                return project.id == field.scope.project.id
+              })
+              if (project)
+                project.customFields.push(newField)
+            }
+          }
+        }
       })
       const response = {
         projects: projects,
