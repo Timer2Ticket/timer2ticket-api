@@ -4,7 +4,7 @@ import { authCommons } from '../shared/auth_commons';
 import { User } from '../models/user/user';
 import { WebhookEvent } from '../enums/webhookEvents';
 import { WebhookEventObjectType } from '../enums/webhookServiceObjectType';
-import { databaseService } from '../shared/database_service';
+import { DatabaseService, databaseService } from '../shared/database_service';
 import { coreService } from '../shared/core_service';
 import { ObjectId } from 'mongodb';
 import { Connection } from '../models/connection/connection';
@@ -79,7 +79,7 @@ router.post('/jira/:connectionId', async (req, res) => {
     }
 
 
-    const accept = _acceptWebhook(connection, event, eventObject, true)
+    const accept = _acceptWebhook(connection, event, eventObject, true) // TODO decide if you need to know if primary service called
     if (!accept) {
         console.log('unsupported type of webhook')
         return
@@ -89,6 +89,9 @@ router.post('/jira/:connectionId', async (req, res) => {
     if (!webhookObject)
         return
     //   console.log(webhookObject)
+    const cycleSaveWebhook = await _isCykleSaveWebhook(connection, event, eventObject, webhookObject)
+    if (!cycleSaveWebhook)
+        return
     const coreResponse = await coreService.postWebhook(webhookObject)
     console.log('core responded ')
 })
@@ -223,23 +226,44 @@ function _acceptWebhook(connection: Connection, event: WebhookEvent, eventObject
     }
 }
 
-async function _getJiraIssue(service: SyncedService, issueId: number): Promise<any | null> {
-    if (service.name !== 'Jira')
-        return null
-    const jiraDomain = service.config.domain!
-    const apiKey = service.config.apiKey
-    const userEmail = service.config.userEmail!
-    const response = await getJiraIssueById(jiraDomain, apiKey, userEmail, issueId)
-    if (!response || typeof response === 'number')
-        return null
-    else if (response.body && response.body.fields && response.body.fields.project && response.body.fields.project.id)
-        return response.body
-    return null
-}
-
 function _checkSubscriptionForWebhook(connection: Connection): boolean {
     return true
     //TODO do better in comertial version
+}
+
+/*
+* checks if current webhook call is result of previous Timer2Ticekt activity to avoid infinite cycling
+* returns true if is save to proceed -> save to continue
+* returns false othewise -> webhook should not be accepted
+*/
+async function _isCykleSaveWebhook(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, webhookObject: WebhookEventData): Promise<boolean> {
+    if (webhookObject.type === WebhookEventObjectType.Issue || webhookObject.type === WebhookEventObjectType.Project) {
+        const mapping = connection.mappings.find(mapping => {
+            return mapping.mappingsObjects[0].id == webhookObject.id || mapping.mappingsObjects[1].id == webhookObject.id
+        })
+        if (!mapping) // mapping does not exist, that means this a fisrt call for this object -> save to proceed
+            return true
+        const callingService = webhookObject.serviceNumber === 1 ? connection.firstService.name : connection.secondService.name
+        const delta = callingService == mapping.mappingsObjects[0].service ?
+            Date.now() - mapping.mappingsObjects[1].lastUpdated :
+            Date.now() - mapping.mappingsObjects[0].lastUpdated
+        console.log(delta)
+        //modified not that long ago -> get rid of it
+        //modified > than treshold ago -> it is ok to proceed
+        return delta > Constants.webhooksAntiCycleTimeout
+    } else if (webhookObject.type === WebhookEventObjectType.Worklog) {
+        const TESO = await databaseService.getTimeEntrySyncedObjectByOneOfTheServicesTEId(connection._id, webhookObject.id)
+        if (!TESO) { // no teso, new Call -> save to proceed
+            return true
+        }
+        const delta = Date.now() - TESO.lastUpdated
+        console.log(delta)
+        //modified not that long ago -> get rid of it
+        //modified > than treshold ago -> it is ok to proceed
+        return delta > Constants.webhooksAntiCycleTimeout
+    } else { //ERROR
+        return false
+    }
 }
 
 module.exports = router
