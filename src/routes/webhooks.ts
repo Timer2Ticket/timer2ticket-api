@@ -89,7 +89,7 @@ router.post('/jira/:connectionId', async (req, res) => {
     if (!webhookObject)
         return
     //   console.log(webhookObject)
-    const cycleSaveWebhook = await _isCykleSaveWebhook(connection, event, eventObject, webhookObject)
+    const cycleSaveWebhook = await _isWebhookCykleSave(connection, event, eventObject, webhookObject)
     if (!cycleSaveWebhook)
         return
     const coreResponse = await coreService.postWebhook(webhookObject)
@@ -132,8 +132,18 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
         return
     const serviceNumber = connection.firstService.name === "Toggl Track" ? 1 : 2
     const event = action === "created" ? WebhookEvent.Created : (action === "updated" ? WebhookEvent.Updated : WebhookEvent.Deleted)
+    const acceptWebhook = _acceptWebhook(connection, event, WebhookEventObjectType.Worklog, false)
+    if (!acceptWebhook)
+        return
     const newWorklogObject = new WebhookEventData(WebhookEventObjectType.Worklog, teId, event, timestamp, connectionId, serviceNumber)
-    //notify core
+    const isCycleSave = await _isWebhookCykleSave(connection, event, WebhookEventObjectType.Worklog, newWorklogObject)
+    if (!isCycleSave) {
+        console.log('toggl webhook not cycle save')
+        return
+    }
+    //TODO notify core
+    //const coreResponse = await coreService.postWebhook(newWorklogObject)
+    //console.log('core responded ')
 })
 
 
@@ -236,7 +246,7 @@ function _checkSubscriptionForWebhook(connection: Connection): boolean {
 * returns true if is save to proceed -> save to continue
 * returns false othewise -> webhook should not be accepted
 */
-async function _isCykleSaveWebhook(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, webhookObject: WebhookEventData): Promise<boolean> {
+async function _isWebhookCykleSave(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, webhookObject: WebhookEventData): Promise<boolean> {
     if (webhookObject.type === WebhookEventObjectType.Issue || webhookObject.type === WebhookEventObjectType.Project) {
         const mapping = connection.mappings.find(mapping => {
             return mapping.mappingsObjects[0].id == webhookObject.id || mapping.mappingsObjects[1].id == webhookObject.id
