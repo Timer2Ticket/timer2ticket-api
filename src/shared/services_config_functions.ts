@@ -24,7 +24,7 @@ export async function getTogglTrackWorkspaces(togglTrackApiKey: string): Promise
   return responseWorkspaces;
 }
 
-export async function createTogglTrackWebhook(togglTrackApiKey: string, workspaceId: number, urlCallback: string): Promise<superagent.Response | number> {
+export async function createTogglTrackWebhook(togglTrackApiKey: string, workspaceId: number | string, urlCallback: string): Promise<superagent.Response | number> {
   let response
   try {
     response = await superagent
@@ -43,6 +43,20 @@ export async function createTogglTrackWebhook(togglTrackApiKey: string, workspac
   }
   return response
 }
+
+
+export async function getExistingTogglTrackWebhooks(togglTrackApiKey: string, workspaceId: number | string): Promise<superagent.Response | number> {
+  let response
+  try {
+    response = await superagent
+      .get(`https://api.track.toggl.com/webhooks/api/v1/subscriptions/${workspaceId}`)
+      .auth(togglTrackApiKey, 'api_token')
+  } catch (err: any) {
+    return err.status
+  }
+  return response
+}
+
 
 export async function getRedmineTimeEntryActivities(redmineApiPoint: string, redmineApiKey: string): Promise<superagent.Response | number> {
   // add last / if not provided by user

@@ -4,6 +4,7 @@ import { authCommons } from '../shared/auth_commons';
 import {
   checkJiraConnection,
   createTogglTrackWebhook,
+  getExistingTogglTrackWebhooks,
   getJiraIssueFileds,
   getJiraIssueStatuses,
   getJiraProjects,
@@ -18,6 +19,8 @@ import { stat } from 'fs';
 import { IssueState } from '../models/connection/config/issue_state';
 import { Project } from '../models/connection/from_client/project';
 import { CustomField } from '../models/connection/config/custom_field';
+import { type } from 'os';
+import { Constants } from '../shared/constants';
 
 
 const router = express.Router();
@@ -165,15 +168,42 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
   }
 });
 
+/*
+  check if webhook exist
+    if does, return 304
+  else create new webhook for the connection
+*/
 router.post('/toggl_track_create_webhook', async (req, res) => {
   const togglTrackApiKey: string | undefined = req.query['api_key']?.toString();
+  const workspaceId: string | undefined = req.query['workspaceId']?.toString()
+  const callbackUrl: string | undefined = req.query['callbackUrl']?.toString()
 
-  if (!togglTrackApiKey) {
+  if (!togglTrackApiKey || !workspaceId || !callbackUrl) {
     return res.sendStatus(400);
   }
-  const password = ''
-  const workspaceId = 0
-  const callbackUrl = ''
+  //check if exists
+  const webhooksResponse = await getExistingTogglTrackWebhooks(togglTrackApiKey, workspaceId)
+  if (!webhooksResponse || typeof webhooksResponse === 'number') {
+    let statusCode = 503;
+    if (webhooksResponse && webhooksResponse !== 401) {
+      statusCode = webhooksResponse;
+    } else if (webhooksResponse && webhooksResponse === 401) {
+      // do not send 401, it would lead to user logout on the client side due to error intercepting
+      statusCode = 400;
+    }
+    return res.sendStatus(statusCode);
+  }
+  const webhookExists = webhooksResponse.body.find((wh: any) => {
+    const whcallbackUrl = wh['url_callback']?.toString()
+    if (!whcallbackUrl)
+      return false
+    else
+      return whcallbackUrl === callbackUrl
+  })
+  if (webhookExists)
+    return res.sendStatus(304)
+
+  //create new
   const response = await createTogglTrackWebhook(togglTrackApiKey, workspaceId, callbackUrl)
   console.log(response)
   if (!response || typeof response === 'number') {
@@ -358,6 +388,7 @@ router.get('/redmine_projects', authCommons.checkJwt, async (req, res) => {
     res.sendStatus(400)
   }
 })
+
 
 
 module.exports = router;
