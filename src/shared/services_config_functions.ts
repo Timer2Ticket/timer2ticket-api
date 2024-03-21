@@ -36,9 +36,12 @@ export async function createTogglTrackWebhook(togglTrackApiKey: string, workspac
           { entity: "time_entry", action: "created" },
           { entity: "time_entry", action: "updated" },
           { entity: "time_entry", action: "deleted" },
-        ]
+        ],
+        enabled: true,
+        description: "Timer2Ticket"
       })
   } catch (err: any) {
+    console.log(err)
     return err.status
   }
   return response

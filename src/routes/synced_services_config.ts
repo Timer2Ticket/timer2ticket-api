@@ -173,14 +173,16 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
     if does, return 304
   else create new webhook for the connection
 */
-router.post('/toggl_track_create_webhook', async (req, res) => {
-  const togglTrackApiKey: string | undefined = req.query['api_key']?.toString();
-  const workspaceId: string | undefined = req.query['workspaceId']?.toString()
-  const callbackUrl: string | undefined = req.query['callbackUrl']?.toString()
+router.post('/toggl_track_create_webhook', authCommons.checkJwt, async (req, res) => {
+  console.log('create webhook request')
+  const togglTrackApiKey: string | undefined = req.body['api_key']?.toString();
+  const workspaceId: string | undefined = req.body['workspaceId']?.toString()
+  const connectionId: string | undefined = req.body['connectionId']?.toString()
 
-  if (!togglTrackApiKey || !workspaceId || !callbackUrl) {
+  if (!togglTrackApiKey || !workspaceId || !connectionId) {
     return res.sendStatus(400);
   }
+  const callbackUrl: string = `https://b44b-2a02-8308-8182-a000-9c8d-dcb1-8ba5-349f.ngrok-free.app/api/v2/webhooks/toggl_track/${connectionId}`
   //check if exists
   const webhooksResponse = await getExistingTogglTrackWebhooks(togglTrackApiKey, workspaceId)
   if (!webhooksResponse || typeof webhooksResponse === 'number') {
@@ -191,6 +193,7 @@ router.post('/toggl_track_create_webhook', async (req, res) => {
       // do not send 401, it would lead to user logout on the client side due to error intercepting
       statusCode = 400;
     }
+    console.log('some error while fetching webhooks list: ', statusCode)
     return res.sendStatus(statusCode);
   }
   const webhookExists = webhooksResponse.body.find((wh: any) => {
@@ -200,12 +203,13 @@ router.post('/toggl_track_create_webhook', async (req, res) => {
     else
       return whcallbackUrl === callbackUrl
   })
-  if (webhookExists)
-    return res.sendStatus(304)
+  if (webhookExists) {
+    console.log('webhook already exists')
+    return res.sendStatus(202)
+  }
 
   //create new
   const response = await createTogglTrackWebhook(togglTrackApiKey, workspaceId, callbackUrl)
-  console.log(response)
   if (!response || typeof response === 'number') {
     // on error, response with status from Toggl Track
     let statusCode = 503;
@@ -218,7 +222,7 @@ router.post('/toggl_track_create_webhook', async (req, res) => {
     return res.sendStatus(statusCode);
   }
   //save password to DB
-  res.sendStatus(201)
+  return res.sendStatus(201)
 })
 
 
