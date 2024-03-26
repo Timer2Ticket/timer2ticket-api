@@ -537,7 +537,7 @@ export class DatabaseService {
   async getTimeEntrySyncedObjectByOneOfTheServicesTEId(connectionId: ObjectId, id: number | string): Promise<TimeEntrySyncedObject | null> {
     if (!this._timeEntrySyncedObjectCollection) return null
     const filterQuery = {
-      $or: [
+      $and: [
         { "serviceTimeEntryObjects.id": id },
         { "connectionId": connectionId }
       ]

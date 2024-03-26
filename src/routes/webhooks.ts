@@ -89,8 +89,8 @@ router.post('/jira/:connectionId', async (req, res) => {
     if (!webhookObject)
         return
     //   console.log(webhookObject)
-    const cycleSaveWebhook = await _isWebhookCykleSave(connection, event, eventObject, webhookObject)
-    if (!cycleSaveWebhook)
+    const cycleSafeWebhook = await _isWebhookCykleSafe(connection, event, eventObject, webhookObject)
+    if (!cycleSafeWebhook)
         return
     const coreResponse = await coreService.postWebhook(webhookObject)
     console.log('core responded ')
@@ -117,8 +117,10 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
         console.log('something went wrong while getting webhook data')
         return
     }
-    if (duration <= 0 || (!tagIds && !projectId)) //time entry is not complete yet
+    if (duration <= 0 || (!tagIds && !projectId)) { //time entry is not complete yet
+        console.log('time entry is not complete yet')
         return
+    }
 
     let connectionId
     try {
@@ -128,22 +130,25 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
         return
     }
     const connection = await databaseService.getConnectionById(connectionId)
-    if (!connection)
+    if (!connection) {
+        console.log('couldnt get connection by Id')
         return
+    }
     const serviceNumber = connection.firstService.name === "Toggl Track" ? 1 : 2
     const event = action === "created" ? WebhookEvent.Created : (action === "updated" ? WebhookEvent.Updated : WebhookEvent.Deleted)
     const acceptWebhook = _acceptWebhook(connection, event, WebhookEventObjectType.Worklog, false)
-    if (!acceptWebhook)
-        return
-    const newWorklogObject = new WebhookEventData(WebhookEventObjectType.Worklog, teId, event, timestamp, connectionId, serviceNumber)
-    const isCycleSave = await _isWebhookCykleSave(connection, event, WebhookEventObjectType.Worklog, newWorklogObject)
-    if (!isCycleSave) {
-        console.log('toggl webhook not cycle save')
+    if (!acceptWebhook) {
+        console.log('webhook not accepted')
         return
     }
-    //TODO notify core
-    //const coreResponse = await coreService.postWebhook(newWorklogObject)
-    //console.log('core responded ')
+    const newWorklogObject = new WebhookEventData(WebhookEventObjectType.Worklog, teId, event, timestamp, connectionId, serviceNumber)
+    const isCycleSafe = await _isWebhookCykleSafe(connection, event, WebhookEventObjectType.Worklog, newWorklogObject)
+    if (!isCycleSafe) {
+        console.log('toggl webhook not cycle safe')
+        return
+    }
+    console.log(newWorklogObject)
+    const coreResponse = await coreService.postWebhook(newWorklogObject)
 })
 
 
@@ -221,9 +226,15 @@ function _getJiraWebhookObject(body: any, event: WebhookEvent, objType: WebhookE
 function _acceptWebhook(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, primaryServiceCalled: boolean): boolean {
     if (!connection.isActive
         || (connection.configSyncJobDefinition.status !== "SUCCESS" && (eventObject === WebhookEventObjectType.Issue || eventObject === WebhookEventObjectType.Project))
-        || (connection.timeEntrySyncJobDefinition.status !== "SUCCESS" && eventObject === WebhookEventObjectType.Worklog))
+        || (connection.timeEntrySyncJobDefinition.status !== "SUCCESS" && eventObject === WebhookEventObjectType.Worklog)) {
         return false
-
+    }
+    const delta: number | null = eventObject === WebhookEventObjectType.Worklog ?
+        (connection.timeEntrySyncJobDefinition.lastJobTime ? Date.now() - connection.timeEntrySyncJobDefinition.lastJobTime : null) :
+        (connection.configSyncJobDefinition.lastJobTime ? Date.now() - connection.configSyncJobDefinition.lastJobTime : null)
+    if (!delta || delta < Constants.webhooksAntiCycleTimeout) { // do not accept minute after sync job
+        return false
+    }
     if (primaryServiceCalled) {
         return true //TODO decide if ignore delete
     } else { //secondary
@@ -243,10 +254,11 @@ function _checkSubscriptionForWebhook(connection: Connection): boolean {
 
 /*
 * checks if current webhook call is result of previous Timer2Ticekt activity to avoid infinite cycling
-* returns true if is save to proceed -> save to continue
+* returns true if is safe to proceed -> safe to continue
 * returns false othewise -> webhook should not be accepted
 */
-async function _isWebhookCykleSave(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, webhookObject: WebhookEventData): Promise<boolean> {
+async function _isWebhookCykleSafe(connection: Connection, event: WebhookEvent, eventObject: WebhookEventObjectType, webhookObject: WebhookEventData): Promise<boolean> {
+    console.log('about to check if wh is cycle safe')
     if (webhookObject.type === WebhookEventObjectType.Issue || webhookObject.type === WebhookEventObjectType.Project) {
         const mapping = connection.mappings.find(mapping => {
             return mapping.mappingsObjects[0].id == webhookObject.id || mapping.mappingsObjects[1].id == webhookObject.id
@@ -255,19 +267,17 @@ async function _isWebhookCykleSave(connection: Connection, event: WebhookEvent, 
             return true
         const callingService = webhookObject.serviceNumber === 1 ? connection.firstService.name : connection.secondService.name
         const delta = callingService == mapping.mappingsObjects[0].service ?
-            Date.now() - mapping.mappingsObjects[1].lastUpdated :
-            Date.now() - mapping.mappingsObjects[0].lastUpdated
-        console.log(delta)
+            (Date.now() - mapping.mappingsObjects[1].lastUpdated) :
+            (Date.now() - mapping.mappingsObjects[0].lastUpdated)
         //modified not that long ago -> get rid of it
         //modified > than treshold ago -> it is ok to proceed
         return delta > Constants.webhooksAntiCycleTimeout
     } else if (webhookObject.type === WebhookEventObjectType.Worklog) {
         const TESO = await databaseService.getTimeEntrySyncedObjectByOneOfTheServicesTEId(connection._id, webhookObject.id)
-        if (!TESO) { // no teso, new Call -> save to proceed
+        if (!TESO) { // no teso, new Call -> safe to proceed
             return true
         }
         const delta = Date.now() - TESO.lastUpdated
-        console.log(delta)
         //modified not that long ago -> get rid of it
         //modified > than treshold ago -> it is ok to proceed
         return delta > Constants.webhooksAntiCycleTimeout
