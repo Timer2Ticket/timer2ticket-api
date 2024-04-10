@@ -174,7 +174,6 @@ router.get('/toggl_track_workspaces', authCommons.checkJwt, async (req, res) => 
   else create new webhook for the connection
 */
 router.post('/toggl_track_create_webhook', authCommons.checkJwt, async (req, res) => {
-  console.log('create webhook request')
   const togglTrackApiKey: string | undefined = req.body['api_key']?.toString();
   const workspaceId: string | undefined = req.body['workspaceId']?.toString()
   const connectionId: string | undefined = req.body['connectionId']?.toString()
@@ -195,7 +194,6 @@ router.post('/toggl_track_create_webhook', authCommons.checkJwt, async (req, res
       // do not send 401, it would lead to user logout on the client side due to error intercepting
       statusCode = 400;
     }
-    console.log('some error while fetching webhooks list: ', statusCode)
     return res.sendStatus(statusCode);
   }
   const webhookExists = webhooksResponse.body.find((wh: any) => {
@@ -206,7 +204,6 @@ router.post('/toggl_track_create_webhook', authCommons.checkJwt, async (req, res
       return whcallbackUrl === callbackUrl
   })
   if (webhookExists) {
-    console.log('webhook already exists')
     return res.sendStatus(202)
   }
 

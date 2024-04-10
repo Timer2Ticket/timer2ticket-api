@@ -46,19 +46,19 @@ router.post('/jira/:connectionId', async (req, res) => {
     try {
         connectionId = new ObjectId(req.params.connectionId);
     } catch (err: any) {
-        console.log('unable to get connection Id')
+        // console.log('unable to get connection Id')
         return
     }
     //get webhook type
     const body = req.body
     const event = _getJiraWebhookEvent(body)
     if (event === WebhookEvent.Error) {
-        console.log('unable to read event')
+        // console.log('unable to read event')
         return
     }
     const eventObject = _getJiraEventObjectType(body)
     if (eventObject === WebhookEventObjectType.Error) {
-        console.log('unable to read object from webhook')
+        // console.log('unable to read object from webhook')
         return
     }
     //get user
@@ -68,20 +68,20 @@ router.post('/jira/:connectionId', async (req, res) => {
     //get connection
     const connection = await databaseService.getConnectionById(connectionId)
     if (!connection) {
-        console.log('unable to get COnnection')
+        // console.log('unable to get COnnection')
         return
     }
     //check subscription
     const subscriptionAllowsWebhooks = await _checkSubscriptionForWebhook(connection)
     if (!subscriptionAllowsWebhooks) {
-        console.log('unsupported subscription for webhooks')
+        // console.log('unsupported subscription for webhooks')
         return
     }
 
 
-    const accept = _acceptWebhook(connection, event, eventObject, true) // TODO decide if you need to know if primary service called
+    const accept = _acceptWebhook(connection, event, eventObject, true)
     if (!accept) {
-        console.log('unsupported type of webhook')
+        // console.log('unsupported type of webhook')
         return
     }
     //get service in case of worklog
@@ -93,12 +93,11 @@ router.post('/jira/:connectionId', async (req, res) => {
     if (!cycleSafeWebhook)
         return
     const coreResponse = await coreService.postWebhook(webhookObject)
-    console.log('core responded ')
+    // console.log('core responded ')
 })
 
 router.post('/toggl_track/:connectionId', async (req, res) => {
     //need to be able to validate creating a webhook
-    console.log('toggl track called')
     if (req.body && req.body.payload && req.body.payload === 'ping' && req.body.validation_code) {
         const validationCode = req.body.validation_code
         res.json({ validation_code: validationCode })
@@ -114,11 +113,11 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
         tagIds = req.body.payload.tag_ids
         projectId = req.body.payload.project_id
     } catch (ex: any) {
-        console.log('something went wrong while getting webhook data')
+        // console.log('something went wrong while getting webhook data')
         return
     }
     if (duration <= 0 || (!tagIds && !projectId)) { //time entry is not complete yet
-        console.log('time entry is not complete yet')
+        // console.log('time entry is not complete yet')
         return
     }
 
@@ -126,19 +125,19 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
     try {
         connectionId = new ObjectId(req.params.connectionId);
     } catch (err: any) {
-        console.log('unable to get connection Id')
+        // console.log('unable to get connection Id')
         return
     }
     const connection = await databaseService.getConnectionById(connectionId)
     if (!connection) {
-        console.log('couldnt get connection by Id')
+        // console.log('couldnt get connection by Id')
         return
     }
 
     //check subscription
     const subscriptionAllowsWebhooks = await _checkSubscriptionForWebhook(connection)
     if (!subscriptionAllowsWebhooks) {
-        console.log('unsupported subscription for webhooks')
+        // console.log('unsupported subscription for webhooks')
         return
     }
 
@@ -146,16 +145,16 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
     const event = action === "created" ? WebhookEvent.Created : (action === "updated" ? WebhookEvent.Updated : WebhookEvent.Deleted)
     const acceptWebhook = _acceptWebhook(connection, event, WebhookEventObjectType.Worklog, false)
     if (!acceptWebhook) {
-        console.log('webhook not accepted')
+        // console.log('webhook not accepted')
         return
     }
     const newWorklogObject = new WebhookEventData(WebhookEventObjectType.Worklog, teId, event, timestamp, connectionId, serviceNumber)
     const isCycleSafe = await _isWebhookCykleSafe(connection, event, WebhookEventObjectType.Worklog, newWorklogObject)
     if (!isCycleSafe) {
-        console.log('toggl webhook not cycle safe')
+        // console.log('toggl webhook not cycle safe')
         return
     }
-    console.log(newWorklogObject)
+    // console.log(newWorklogObject)
     const coreResponse = await coreService.postWebhook(newWorklogObject)
 })
 
@@ -244,7 +243,7 @@ function _acceptWebhook(connection: Connection, event: WebhookEvent, eventObject
         return false
     }
     if (primaryServiceCalled) {
-        return true //TODO decide if ignore delete
+        return true
     } else { //secondary
         if (eventObject === WebhookEventObjectType.Worklog) {
             return true
