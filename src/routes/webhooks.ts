@@ -65,14 +65,14 @@ router.post('/jira/:connectionId', async (req, res) => {
     const accountId = _getJiraUserId(body, eventObject)
     if (!accountId)
         return
-    //get connections (there may be more, I have to work with all of them)
+    //get connection
     const connection = await databaseService.getConnectionById(connectionId)
     if (!connection) {
         console.log('unable to get COnnection')
         return
     }
     //check subscription
-    const subscriptionAllowsWebhooks = _checkSubscriptionForWebhook(connection)
+    const subscriptionAllowsWebhooks = await _checkSubscriptionForWebhook(connection)
     if (!subscriptionAllowsWebhooks) {
         console.log('unsupported subscription for webhooks')
         return
@@ -134,6 +134,14 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
         console.log('couldnt get connection by Id')
         return
     }
+
+    //check subscription
+    const subscriptionAllowsWebhooks = await _checkSubscriptionForWebhook(connection)
+    if (!subscriptionAllowsWebhooks) {
+        console.log('unsupported subscription for webhooks')
+        return
+    }
+
     const serviceNumber = connection.firstService.name === "Toggl Track" ? 1 : 2
     const event = action === "created" ? WebhookEvent.Created : (action === "updated" ? WebhookEvent.Updated : WebhookEvent.Deleted)
     const acceptWebhook = _acceptWebhook(connection, event, WebhookEventObjectType.Worklog, false)
@@ -247,9 +255,17 @@ function _acceptWebhook(connection: Connection, event: WebhookEvent, eventObject
     }
 }
 
-function _checkSubscriptionForWebhook(connection: Connection): boolean {
-    return true
-    //TODO do better in comertial version
+async function _checkSubscriptionForWebhook(connection: Connection): Promise<boolean> {
+    if (Constants.isCommercialVersion) {
+        const membershipInfo = await databaseService.getMembershipInfoByUserId(connection.userId)
+        if (membershipInfo && membershipInfo.currentMembership === "Senior") {
+            return true
+        } else {
+            return false
+        }
+    } else {
+        return true
+    }
 }
 
 /*
