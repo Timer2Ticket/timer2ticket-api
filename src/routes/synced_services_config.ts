@@ -178,11 +178,13 @@ router.post('/toggl_track_create_webhook', authCommons.checkJwt, async (req, res
   const togglTrackApiKey: string | undefined = req.body['api_key']?.toString();
   const workspaceId: string | undefined = req.body['workspaceId']?.toString()
   const connectionId: string | undefined = req.body['connectionId']?.toString()
+  const ApiURL: string | undefined = req.body['backendURL']?.toString()
 
-  if (!togglTrackApiKey || !workspaceId || !connectionId) {
+  if (!togglTrackApiKey || !workspaceId || !connectionId || !ApiURL) {
     return res.sendStatus(400);
   }
-  const callbackUrl: string = `https://b44b-2a02-8308-8182-a000-9c8d-dcb1-8ba5-349f.ngrok-free.app/api/v2/webhooks/toggl_track/${connectionId}`
+
+  const callbackUrl: string = `${ApiURL}webhooks/toggl_track/${connectionId}`
   //check if exists
   const webhooksResponse = await getExistingTogglTrackWebhooks(togglTrackApiKey, workspaceId)
   if (!webhooksResponse || typeof webhooksResponse === 'number') {
