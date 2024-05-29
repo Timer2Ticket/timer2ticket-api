@@ -24,6 +24,43 @@ export async function getTogglTrackWorkspaces(togglTrackApiKey: string): Promise
   return responseWorkspaces;
 }
 
+export async function createTogglTrackWebhook(togglTrackApiKey: string, workspaceId: number | string, urlCallback: string): Promise<superagent.Response | number> {
+  let response
+  try {
+    response = await superagent
+      .post(`https://api.track.toggl.com/webhooks/api/v1/subscriptions/${workspaceId}`)
+      .auth(togglTrackApiKey, 'api_token')
+      .send({
+        url_callback: urlCallback,
+        event_filters: [
+          { entity: "time_entry", action: "created" },
+          { entity: "time_entry", action: "updated" },
+          { entity: "time_entry", action: "deleted" },
+        ],
+        enabled: true,
+        description: "Timer2Ticket"
+      })
+  } catch (err: any) {
+    console.log(err)
+    return err.status
+  }
+  return response
+}
+
+
+export async function getExistingTogglTrackWebhooks(togglTrackApiKey: string, workspaceId: number | string): Promise<superagent.Response | number> {
+  let response
+  try {
+    response = await superagent
+      .get(`https://api.track.toggl.com/webhooks/api/v1/subscriptions/${workspaceId}`)
+      .auth(togglTrackApiKey, 'api_token')
+  } catch (err: any) {
+    return err.status
+  }
+  return response
+}
+
+
 export async function getRedmineTimeEntryActivities(redmineApiPoint: string, redmineApiKey: string): Promise<superagent.Response | number> {
   // add last / if not provided by user
   redmineApiPoint = redmineApiPoint.endsWith('/')
@@ -172,7 +209,6 @@ export async function getJiraProjects(jiraDomain: string, jiraApiKey: string, ji
     : `https://${jiraDomain}`;
 
   const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
-
   try {
     const response = await superagent
       .get(`${jiraDomain}/rest/api/3/project`)
@@ -180,6 +216,7 @@ export async function getJiraProjects(jiraDomain: string, jiraApiKey: string, ji
       .set('Authorization', `Basic ${secret}`);
     return response
   } catch (err: any) {
+    console.log(err)
     return err.status;
   }
 }
@@ -198,6 +235,29 @@ export async function getJiraIssueFileds(jiraDomain: string, jiraApiKey: string,
   try {
     const response = await superagent
       .get(`${jiraDomain}/rest/api/3/field`)
+      .accept('application/json')
+      .set('Authorization', `Basic ${secret}`);
+    return response
+  } catch (err: any) {
+    return err.status;
+  }
+}
+
+
+export async function getJiraIssueById(jiraDomain: string, jiraApiKey: string, jiraUserEmail: string, issueId: number): Promise<superagent.Response | null> {
+  jiraDomain = jiraDomain.endsWith('/')
+    ? jiraDomain
+    : `${jiraDomain}/`;
+  // add https:// if not provided by user
+  jiraDomain = (jiraDomain.startsWith('https://') || jiraDomain.startsWith('http://'))
+    ? jiraDomain
+    : `https://${jiraDomain}`;
+
+  const secret = Buffer.from(`${jiraUserEmail}:${jiraApiKey}`).toString("base64")
+
+  try {
+    const response = await superagent
+      .get(`${jiraDomain}/rest/api/3/issue/${issueId}`)
       .accept('application/json')
       .set('Authorization', `Basic ${secret}`);
     return response

@@ -1,5 +1,6 @@
 import superagent from 'superagent';
 import { Constants } from './constants';
+import { WebhookEventData } from '../models/connection/config/webhook_event_data';
 
 export class CoreService {
   private static _instance: CoreService;
@@ -50,6 +51,18 @@ export class CoreService {
     try {
       response = await superagent
         .post(`${Constants.t2tCoreUrl}schedule_time_entries_job/${jobLogId}`);
+    } catch (err: any) {
+      return err.status;
+    }
+    return response;
+  }
+
+  async postWebhook(data: WebhookEventData): Promise<superagent.Response | number> {
+    let response: superagent.Response;
+    try {
+      response = await superagent
+        .post(`${Constants.t2tCoreUrl}webhooks`)
+        .send(data)
     } catch (err: any) {
       return err.status;
     }
