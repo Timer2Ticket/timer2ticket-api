@@ -162,8 +162,11 @@ router.post('/toggl_track/:connectionId', async (req, res) => {
 
 function _getJiraWebhookEvent(body: any): WebhookEvent {
     let webhookEvent
-    if (body.webhookEvent) webhookEvent = body.webhookEvent
-    else return WebhookEvent.Error
+    if (body.webhookEvent) {
+        webhookEvent = body.webhookEvent
+    } else {
+        return WebhookEvent.Error
+    }
     const splitOnColon = webhookEvent.split(':')
     const event = splitOnColon[splitOnColon.length - 1].split('_')[1]
     if (event === 'created')
@@ -177,8 +180,11 @@ function _getJiraWebhookEvent(body: any): WebhookEvent {
 }
 function _getJiraEventObjectType(body: any): WebhookEventObjectType {
     let webhookEvent
-    if (body.webhookEvent) webhookEvent = body.webhookEvent
-    else return WebhookEventObjectType.Error
+    if (body.webhookEvent) {
+        webhookEvent = body.webhookEvent
+    } else {
+        return WebhookEventObjectType.Error
+    }
     const splitOnColon = webhookEvent.split(':')
     const event = splitOnColon[splitOnColon.length - 1].split('_')[0]
     if (event === 'issue')

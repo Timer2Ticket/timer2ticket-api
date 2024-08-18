@@ -237,8 +237,10 @@ router.get('/check_jira_connection', authCommons.checkJwt, async (req, res) => {
   if (jiraApiKey && jiraDomain && jiraUserEmail) {
     jiraDomain = encodeURI(jiraDomain);
 
-    const jiraResponse: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail);
+    let jiraResponse: superagent.Response | number = await checkJiraConnection(jiraDomain, jiraApiKey, jiraUserEmail);
     if (!jiraResponse || typeof jiraResponse === 'number') {
+      if (jiraResponse === 401)
+        jiraResponse = 400
       return res.sendStatus(jiraResponse ? jiraResponse : 503)
     } else {
       return res.send(jiraResponse.body.accountId);
