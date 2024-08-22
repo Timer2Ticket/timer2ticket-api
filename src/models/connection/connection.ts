@@ -20,7 +20,7 @@ export class Connection {
   firstService!: SyncedService;
   secondService!: SyncedService;
   isActive!: boolean;
-  deleteTimestamp!: number | null;
+  deletionTimestamp!: number | null;
   createdTimestamp!: number;
   mappings!: any[];
   projectMappings!: ProjectMapping[]
@@ -35,7 +35,7 @@ export class Connection {
     this.secondService = new SyncedService(connectionFromClient.secondTool);
 
     this.isActive = isActive;
-    this.deleteTimestamp = null;
+    this.deletionTimestamp = null;
     this.createdTimestamp = Math.floor(Date.now());
     this.mappings = [];
     this.projectMappings = []
