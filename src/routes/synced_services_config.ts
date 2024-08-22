@@ -220,7 +220,6 @@ router.post('/toggl_track_create_webhook', authCommons.checkJwt, async (req, res
     }
     return res.sendStatus(statusCode);
   }
-  //save password to DB
   return res.sendStatus(201)
 })
 
