@@ -160,7 +160,12 @@ async function saveInvoiceToFakturoid(data: any) {
 async function processSubscriptionCreated(stripeCustomerId: string, data: any) {
   const stripeSubscriptionId = data.lines.data[0].subscription;
   const stripePriceId = data.lines.data[0].price.id;
-  const numberOfConnections = parseInt(data.lines.data[0].quantity) + parseInt(data.lines.data[1].quantity);
+
+  let numberOfConnections = 0;
+  for(let i = 0; i < data.lines.data.length; i++) {
+    numberOfConnections += parseInt(data.lines.data[i].quantity);
+  }
+
   const subscriptionEnds = parseInt(data.lines.data[0].period.end) * 1000;
 
   const membershipName = await t2tLib.getMembershipNameByPriceId(stripePriceId);
