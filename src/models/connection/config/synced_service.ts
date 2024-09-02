@@ -14,12 +14,12 @@ export class SyncedService {
   }
 
   static getSyncServiceName(syncedService: SyncedService): string {
-    if(syncedService.name === ToolType.TOGGL_TRACK.name) {
+    if (syncedService.name === ToolType.TOGGL_TRACK.name) {
       return syncedService.config.workspace!.name;
     } else if (syncedService.name === ToolType.REDMINE.name) {
       return syncedService.config.apiPoint!;
     } else if (syncedService.name === ToolType.JIRA.name) {
-      throw new Error('Not implemented');
+      return syncedService.config.domain!;
     } else {
       throw new Error('Unknown sync service name');
     }

@@ -1,7 +1,8 @@
-import { IsObject, ValidateNested } from 'class-validator';
+import { IsArray, IsObject, ValidateNested } from 'class-validator';
 import superagent from 'superagent';
 import { ToolType } from '../../../enums/tools/type_of_tool';
 import {
+  getJiraIssueStatuses,
   getRedmineTimeEntryActivities,
   getRedmineUserDetail, getTogglTrackUser,
   getTogglTrackWorkspaces,
@@ -16,12 +17,16 @@ export class ConnectionFromClient {
   timeEntrySyncJobDefinition!: SyncJobDefinitionFromClient;
 
   @IsObject()
-    // eslint-disable-next-line
+  // eslint-disable-next-line
   firstTool!: any;
 
   @IsObject()
-    // eslint-disable-next-line
+  // eslint-disable-next-line
   secondTool!: any;
+
+  @IsArray()
+  // eslint-disable-next-line
+  projectMappings!: any;
 
   // eslint-disable-next-line
   constructor(obj: any) {
@@ -32,22 +37,43 @@ export class ConnectionFromClient {
     } else if (obj.secondTool.tool == ToolType.REDMINE.name) {
       this.checkRedmineUrl(obj.secondTool);
     }
+
+    if (obj.firstTool.tool == ToolType.JIRA.name) {
+      this.checkJiraUrl(obj.firstTool);
+    } else if (obj.secondTool.tool == ToolType.JIRA.name) {
+      this.checkJiraUrl(obj.secondTool);
+    }
+
+
     this.firstTool = obj.firstTool;
     this.secondTool = obj.secondTool;
+    this.projectMappings = obj.projectMappings
   }
 
   private checkRedmineUrl(tool: any) {
     tool.redmineApiPoint = tool.redmineApiPoint.endsWith('/')
       ? tool.redmineApiPoint
       : `${tool.redmineApiPoint}/`;
+
+    tool.redmineApiPoint = tool.redmineApiPoint.startsWith('https://')
+      ? tool.redmineApiPoint
+      : `https://${tool.redmineApiPoint}`
+
+  }
+  private checkJiraUrl(tool: any) {
+    tool.jiraDomain = tool.jiraDomain.endsWith('/')
+      ? tool.jiraDomain
+      : `${tool.jiraDomain}/`;
   }
 
   async validateConnectionTools(errors: string[]): Promise<boolean> {
     let result = true;
 
     if (this.firstTool.tool == this.secondTool.tool) {
-      errors.push('Both tools are the same');
-      return false;
+      if (this.firstTool.tool && this.firstTool.tool == ToolType.TOGGL_TRACK.name) {
+        errors.push('Both tools are Toggl Track')
+        return false;
+      }
     }
 
     if (!await this.validateFirstTool(errors)) {
@@ -56,8 +82,32 @@ export class ConnectionFromClient {
     if (!await this.validateSecondTool(errors)) {
       result = false;
     }
+    if (this.firstTool.tool == this.secondTool.tool && this.firstTool.tool == ToolType.REDMINE.name) {
+      if (this.areAPIPointsSame(this.firstTool.redmineApiPoint, this.secondTool.redmineApiPoint)) {
+        errors.push('Same Redmine API point')
+        return false
+      }
+    }
+    if (this.firstTool.tool == this.secondTool.tool && this.firstTool.tool == ToolType.JIRA.name) {
+      if (this.areAPIPointsSame(this.firstTool.jiraDomain, this.secondTool.jiraDomain)) {
+        errors.push('Same Jira Domain')
+        return false
+      }
+    }
 
     return result;
+  }
+
+  private areAPIPointsSame(first: string, second: string): boolean {
+    if (!first.startsWith('https://'))
+      first = `https://${first}`
+    if (!second.startsWith('https://'))
+      second = `https://${second}`
+    if (!first.endsWith('/'))
+      first = `${first}/`
+    if (!second.endsWith('/'))
+      second = `${second}/`
+    return first === second
   }
 
   private async validateFirstTool(errors: string[]): Promise<boolean> {
@@ -91,11 +141,11 @@ export class ConnectionFromClient {
   // eslint-disable-next-line
   private async validateRedmine(tool: any, errorPrefix: string, errors: string[]): Promise<boolean> {
     ToolType.REDMINE.attributesFromClient.forEach((attribute) => {
-        if (!tool[attribute]) {
-          errors.push(`${errorPrefix} is missing ${attribute}`);
-          return false;
-        }
-      },
+      if (!tool[attribute]) {
+        errors.push(`${errorPrefix} is missing ${attribute}`);
+        return false;
+      }
+    },
     );
     const userId: string = tool.userId;
     const redmineApiKey: string = tool.redmineApiKey;
@@ -104,7 +154,7 @@ export class ConnectionFromClient {
     const selectedRedmineDefaultTimeEntryActivityName: string = tool.selectedRedmineDefaultTimeEntryActivityName;
 
     const responseTimeEntryActivities: superagent.Response | number = await getRedmineTimeEntryActivities(redmineApiPoint, redmineApiKey);
-    if (typeof responseTimeEntryActivities === 'number') {
+    if (!responseTimeEntryActivities || typeof responseTimeEntryActivities === 'number') {
       errors.push(`Invalid redmine api key or api point.`);
       return false;
     }
@@ -112,10 +162,10 @@ export class ConnectionFromClient {
     let foundRedmineDefaultTimeEntryActivity = null;
     // eslint-disable-next-line
     responseTimeEntryActivities.body.time_entry_activities.forEach((timeEntryActivity: any) => {
-        if (timeEntryActivity.id === selectedRedmineDefaultTimeEntryActivity && timeEntryActivity.name === selectedRedmineDefaultTimeEntryActivityName) {
-          foundRedmineDefaultTimeEntryActivity = timeEntryActivity;
-        }
-      },
+      if (timeEntryActivity.id === selectedRedmineDefaultTimeEntryActivity && timeEntryActivity.name === selectedRedmineDefaultTimeEntryActivityName) {
+        foundRedmineDefaultTimeEntryActivity = timeEntryActivity;
+      }
+    },
     );
 
     if (!foundRedmineDefaultTimeEntryActivity) {
@@ -140,18 +190,42 @@ export class ConnectionFromClient {
 
   // eslint-disable-next-line
   private async validateJira(tool: any, errorPrefix: string, errors: string[]): Promise<boolean> {
-    // TODO Implement
+    ToolType.JIRA.attributesFromClient.forEach((attribute) => {
+      if (!tool[attribute] == undefined) {
+        errors.push(`${errorPrefix} is missing ${attribute}`);
+        return false;
+      }
+    })
+    const jiraApiKey: string = tool.jiraApiKey
+    const jiraUserEmail: string = tool.jiraUserEmail
+    const jiraDomain: string = tool.jiraDomain
+
+    const jiraConnection: superagent.Response | number = await getJiraIssueStatuses(jiraDomain, jiraApiKey, jiraUserEmail)
+    if (!jiraConnection || typeof jiraConnection === 'number') {
+      errors.push(`Invalid Jira ApiKey, domain or user email`)
+      return false
+    }
+
+    const jiraFallbackIssue: boolean = tool.jiraFallbackIssue
+    if (jiraFallbackIssue === true) {
+      const jiraFallbackIssueName: string = tool.jiraFallbackIssueName
+      if (jiraFallbackIssueName === '') {
+        errors.push(`Name of the fallback Issue is empty and it shouldn\'t be`)
+        return false
+      }
+    }
+
     return true;
   }
 
   // eslint-disable-next-line
   private async validateTogglTrack(tool: any, errorPrefix: string, errors: string[]): Promise<boolean> {
     ToolType.TOGGL_TRACK.attributesFromClient.forEach((attribute) => {
-        if (!tool[attribute]) {
-          errors.push(`${errorPrefix} is missing ${attribute}`);
-          return false;
-        }
-      },
+      if (!tool[attribute]) {
+        errors.push(`${errorPrefix} is missing ${attribute}`);
+        return false;
+      }
+    },
     );
     const userId: string = tool.userId;
     const togglTrackApiKey: string = tool.togglTrackApiKey;
@@ -167,10 +241,10 @@ export class ConnectionFromClient {
     let foundTogglTrackWorkspace = null;
     // eslint-disable-next-line
     responseWorkspaces.body.forEach((workspace: any) => {
-        if (workspace.id === selectedTogglTrackWorkspace && workspace.name === selectedTogglTrackWorkspaceName) {
-          foundTogglTrackWorkspace = workspace;
-        }
-      },
+      if (workspace.id === selectedTogglTrackWorkspace && workspace.name === selectedTogglTrackWorkspaceName) {
+        foundTogglTrackWorkspace = workspace;
+      }
+    },
     );
 
     if (!foundTogglTrackWorkspace) {

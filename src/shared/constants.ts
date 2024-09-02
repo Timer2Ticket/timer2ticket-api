@@ -23,6 +23,8 @@ export class Constants {
   static authManagementClientId = process.env.AUTH0_MANAGEMENT_CLIENT_ID;
   static authManagementClientSecret = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET;
 
+  static webhooksAntiCycleTimeout = 1000 * 60 //1 minute in milliseconds
+
   private static getBooleanValue(value: string | boolean | null | undefined): boolean {
     if (typeof value === 'boolean') {
       return value;

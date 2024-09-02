@@ -12,8 +12,8 @@ const ToolType = {
   JIRA: {
     name: "Jira",
     type: "Project",
-    attributesFromClient: []
+    attributesFromClient: ["jiraApiKey", "jiraUserEmail", "jiraDomain", "jiraFallbackIssue"]
   },
 };
 
-export {ToolType};
+export { ToolType };

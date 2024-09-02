@@ -10,6 +10,7 @@ import { SyncJobDefinitionFromClient } from '../models/connection/from_client/sy
 import { Constants } from '../shared/constants';
 import { MembershipInfo } from '../models/commrecial/membership_info';
 import { coreService } from '../shared/core_service';
+import { error } from 'console';
 
 const router = express.Router({ mergeParams: true });
 router.use(express.urlencoded({ extended: false }));
@@ -23,7 +24,7 @@ if (Constants.isCommercialVersion) {
 
 // middleware that is specific to this router
 router.use((req, res, next) => {
-  console.log(`Connections router calls at time: ${Date.now()}`);
+  console.log(`Connections router calls at time: ${Date().toString()}`);
 
   // For CORS policy
   res.append('Access-Control-Allow-Origin', ['*']);
@@ -40,6 +41,7 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
   if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
+
 
   const auth0UserId = req.params.auth0UserId;
 
@@ -97,7 +99,6 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
   }
 
   const connection: Connection = new Connection(user._id, nextId, connectionFromClient, isActive);
-
   const result = await databaseService.createConnection(connection);
 
   if (!result) {
@@ -108,7 +109,6 @@ router.post('/', authCommons.checkJwt, async (req, res) => {
   if (!coreServiceResponse || typeof coreServiceResponse === 'number') {
     return res.status(503).send('Error creating connection');
   }
-
   return res.status(201).send(result);
 });
 
@@ -131,7 +131,6 @@ router.get('/', authCommons.checkJwt, async (req, res) => {
   if (!connections) {
     return res.status(503).send('Error getting connections');
   }
-
   return res.status(200).send(connections);
 });
 
@@ -177,7 +176,6 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
   if (!authCommons.authorizeUser(req)) {
     return res.sendStatus(401);
   }
-
   const auth0UserId = req.params.auth0UserId;
   const connectionId = req.params.connectionId;
 
@@ -235,12 +233,13 @@ router.put('/:connectionId', authCommons.checkJwt, async (req, res) => {
 
   // update connection
   const newConnection: Connection = new Connection(connection.userId, connection.userConnectionId, connectionFromClient, connection.isActive);
-
   // save connection
+
   const result = await databaseService.updateConnectionById(connection._id, newConnection);
   if (!result) {
     return res.status(400).send('Error updating connection');
   }
+
 
   result._id = connection._id;
 
@@ -366,6 +365,22 @@ router.patch('/:connectionId', authCommons.checkJwt, async (req, res) => {
     connection.timeEntrySyncJobDefinition.everyHour = timeEntrySyncJobDefinitionFromClient.everyHour;
     connection.timeEntrySyncJobDefinition.selectionOfDays = timeEntrySyncJobDefinitionFromClient.selectionOfDays;
     connection.timeEntrySyncJobDefinition.syncTime = timeEntrySyncJobDefinitionFromClient.syncTime;
+  }
+  //updated selected issue states to sync
+  if ('ignoredIssueStates' in req.body) {
+    const errors: string[] = [];
+
+    if (req.body.serviceNumber == 1) {
+      connection.firstService.config.ignoredIssueStates = req.body.ignoredIssueStates
+    } else if (req.body.serviceNumber == 2) {
+      connection.secondService.config.ignoredIssueStates = req.body.ignoredIssueStates
+    } else {
+      errors.push(`Invalid Number of Service, expected 1 or 2, got ${req.body.serviceNumber}`)
+    }
+
+    if (errors.length > 0) {
+      return res.status(400).send('Incorrect request body: ' + JSON.stringify(errors));
+    }
   }
 
   const result = await databaseService.updateConnectionById(connection._id, connection);
@@ -545,23 +560,23 @@ router.post('/:connectionId/syncConfigObjects', authCommons.checkJwt, async (req
   // set connection to IN_PROGRESS
   connection.configSyncJobDefinition.status = 'IN_PROGRESS';
   const savedConnection = await databaseService.updateConnectionById(connection._id, connection);
-  if(!savedConnection) {
+  if (!savedConnection) {
     return res.status(503).send('Error updating connection');
   }
 
   // create JobLog
   const timeNow = Math.floor(Date.now());
 
-  const savedJobLog = await databaseService.createJobLog(user, savedConnection,'config', timeNow);
+  const savedJobLog = await databaseService.createJobLog(user, savedConnection, 'config', timeNow);
 
-  if(!savedJobLog) {
+  if (!savedJobLog) {
     return res.status(503).send('Error creating job log');
   }
 
   // create log of use of immediate sync when commercial version
   if (Constants.isCommercialVersion) {
     const immediateSyncLogDescription = '#' + connection.userConnectionId + ' ' + Connection.getConnectionBetweenString(connection);
-    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs, -1, timeNow,'USE_CONFIG',savedJobLog._id, immediateSyncLogDescription);
+    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs, -1, timeNow, 'USE_CONFIG', savedJobLog._id, immediateSyncLogDescription);
     if (!savedImmediateSyncLog) {
       return res.status(503).send('Error creating immediate sync log');
     }
@@ -629,23 +644,23 @@ router.post('/:connectionId/syncTimeEntries', authCommons.checkJwt, async (req, 
   // set connection to IN_PROGRESS
   connection.timeEntrySyncJobDefinition.status = 'IN_PROGRESS';
   const savedConnection = await databaseService.updateConnectionById(connection._id, connection);
-  if(!savedConnection) {
+  if (!savedConnection) {
     return res.status(503).send('Error updating connection');
   }
 
   // create JobLog
   const timeNow = Math.floor(Date.now());
 
-  const savedJobLog = await databaseService.createJobLog(user, savedConnection,'time-entries', timeNow);
+  const savedJobLog = await databaseService.createJobLog(user, savedConnection, 'time-entries', timeNow);
 
-  if(!savedJobLog) {
+  if (!savedJobLog) {
     return res.status(503).send('Error creating job log');
   }
 
   // create log of use of immediate sync when commercial version
   if (Constants.isCommercialVersion) {
     const immediateSyncLogDescription = '#' + connection.userConnectionId + ' ' + Connection.getConnectionBetweenString(connection);
-    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs, -1, timeNow,'USE_TIME_ENTRIES',savedJobLog._id, immediateSyncLogDescription);
+    const savedImmediateSyncLog = await databaseService.createImmediateSyncLog(user._id, useImmediateSyncResult!.currentImmediateSyncs, -1, timeNow, 'USE_TIME_ENTRIES', savedJobLog._id, immediateSyncLogDescription);
     if (!savedImmediateSyncLog) {
       return res.status(503).send('Error creating immediate sync log');
     }

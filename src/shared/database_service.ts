@@ -5,12 +5,14 @@ import { JobLog } from '../models/job_log';
 import { MembershipInfo } from '../models/commrecial/membership_info';
 import { Connection } from '../models/connection/connection';
 import { ImmediateSyncLog } from '../models/commrecial/immediate_sync_log';
+import { TimeEntrySyncedObject } from '../models/time_entry_objects/time_entry_synced_object';
 
 export class DatabaseService {
   private static _mongoDbName = Constants.dbName || 'timer2ticketDB_new';
   private static _usersCollectionName = 'users';
   private static _connectionsCollectionName = 'connections';
   private static _jobLogsCollectionName = 'jobLogs';
+  private static _timeEntrySyncedObjectName = 'timeEntrySyncedObjects'
   // for commercial version
   private static _membershipInfoCollectionName = 'membershipInfo';
   private static _immediateSyncLogsCollectionName = 'immediateSyncLogs';
@@ -25,6 +27,7 @@ export class DatabaseService {
   private _connectionsCollection: Collection<Connection> | undefined;
   private _jobLogsCollection: Collection<JobLog> | undefined;
   private _immediateSyncLogsCollection: Collection<ImmediateSyncLog> | undefined;
+  private _timeEntrySyncedObjectCollection: Collection<TimeEntrySyncedObject> | undefined
 
   private _initCalled = false;
 
@@ -59,6 +62,7 @@ export class DatabaseService {
     this._usersCollection = this._db.collection(DatabaseService._usersCollectionName);
     this._connectionsCollection = this._db.collection(DatabaseService._connectionsCollectionName);
     this._jobLogsCollection = this._db.collection(DatabaseService._jobLogsCollectionName);
+    this._timeEntrySyncedObjectCollection = this._db.collection(DatabaseService._timeEntrySyncedObjectName)
 
     if (Constants.isCommercialVersion) {
       this._membershipInfoCollection = this._db.collection(DatabaseService._membershipInfoCollectionName);
@@ -98,7 +102,7 @@ export class DatabaseService {
     return this._usersCollection.findOne(filterQuery);
   }
 
-  async getMigratedUser(email: string) : Promise<User | null> {
+  async getMigratedUser(email: string): Promise<User | null> {
     if (!this._usersCollection) return null;
     const filterQuery = { email: email, auth0UserId: "" };
     return this._usersCollection.findOne(filterQuery);
@@ -516,6 +520,30 @@ export class DatabaseService {
 
     const result = await this._connectionsCollection.deleteOne(filterQuery);
     return result.result.ok === 1;
+  }
+
+  async getConnectionByServiceAccountId(accountId: number | string): Promise<Connection[] | null> {
+    if (!this._connectionsCollection) return null
+
+    const filterQuery = {
+      $or: [
+        { "secondService.config.userId": accountId },
+        { "firstService.config.userId": accountId }]
+    }
+    const result = await this._connectionsCollection.find(filterQuery).project({ _id: 1, userId: 1 }).toArray()
+    return result
+  }
+
+  async getTimeEntrySyncedObjectByOneOfTheServicesTEId(connectionId: ObjectId, id: number | string): Promise<TimeEntrySyncedObject | null> {
+    if (!this._timeEntrySyncedObjectCollection) return null
+    const filterQuery = {
+      $and: [
+        { "serviceTimeEntryObjects.id": id },
+        { "connectionId": connectionId }
+      ]
+    }
+    const result = await this._timeEntrySyncedObjectCollection.findOne(filterQuery)
+    return result
   }
 }
 

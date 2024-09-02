@@ -14,6 +14,7 @@ const usersRoutes = require('./routes/users');
 const connectionRoutes = require('./routes/connections');
 const syncedServicesConfigRoutes = require('./routes/synced_services_config');
 const jobLogsRoutes = require('./routes/job_logs');
+const webhookRoutes = require('./routes/webhooks')
 
 const app = express();
 
@@ -31,6 +32,7 @@ if (Constants.isCommercialVersion) {
 
 app.use('/api/v2/users/:auth0UserId/connections', connectionRoutes);
 app.use('/api/v2/users/:auth0UserId/jobLogs', jobLogsRoutes);
+app.use('/api/v2/webhooks', webhookRoutes)
 
 // Needs to be last, because it is catch all users route
 app.use('/api/v2/users/:auth0UserId', usersRoutes);
