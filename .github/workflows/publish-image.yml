@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           registry-url: 'https://npm.pkg.github.com'
-          node-version: '14.x'
+          node-version: '16.x'
           always-auth: 'true'
           scope: '@timer2ticket'
       - run: |

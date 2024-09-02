@@ -1,4 +1,4 @@
-FROM node:14-alpine as builder
+FROM node:16-alpine as builder
 
 RUN echo @timer2ticket:registry=https://npm.pkg.github.com/ >> ~/.npmrc
 RUN --mount=type=secret,id=github_token \
@@ -14,7 +14,7 @@ COPY . /app
 
 RUN npm run build
 
-FROM node:14-alpine
+FROM node:16-alpine
 
 ENV NODE_ENV=production
 
