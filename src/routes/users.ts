@@ -123,6 +123,7 @@ router.put('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   user.configSyncJobDefinition = userFromClient.configSyncJobDefinition;
   user.timeEntrySyncJobDefinition = userFromClient.timeEntrySyncJobDefinition;
   user.serviceDefinitions = userFromClient.serviceDefinitions;
+  user.removeObsoleteMappingsJobDefinition.schedule = Utilities.randomizeCronSchedule("0 */24 * * *"); // default value - midnight + random minute
 
   const updatedUser = await databaseService.updateUser(user);
 
