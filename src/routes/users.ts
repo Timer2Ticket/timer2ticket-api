@@ -9,6 +9,7 @@ import { validate } from 'class-validator';
 import { Constants } from '../shared/constants';
 import { UserChangePassword } from '../models/user_change_password';
 import { Utilities } from '../shared/utilities';
+import {JobDefinition} from "../models/job_definition";
 
 const router = express.Router();
 router.use(express.urlencoded({ extended: false }));
@@ -120,10 +121,14 @@ router.put('/:userId([a-zA-Z0-9]{24})', async (req, res) => {
   }
 
   // only these properties can be changed this way
+
+  const removeObsoleteMappingsJobDefinition = new JobDefinition();
+  removeObsoleteMappingsJobDefinition.schedule = Utilities.randomizeCronSchedule("0 */24 * * *");
+
   user.configSyncJobDefinition = userFromClient.configSyncJobDefinition;
   user.timeEntrySyncJobDefinition = userFromClient.timeEntrySyncJobDefinition;
   user.serviceDefinitions = userFromClient.serviceDefinitions;
-  user.removeObsoleteMappingsJobDefinition.schedule = Utilities.randomizeCronSchedule("0 0 1 1 */100"); //TODO: revert this to default value - midnight + random minute
+  user.removeObsoleteMappingsJobDefinition = removeObsoleteMappingsJobDefinition //TODO: revert this to default value - midnight + random minute
 
   const updatedUser = await databaseService.updateUser(user);
 
